@@ -14,7 +14,7 @@
     "@react-native-community/masked-view": "^0.1.11",
     "@react-navigation/bottom-tabs": "^6.6.0",
     "@react-navigation/native": "^6.1.17",
-    "@react-navigation/stack": "^6.4.0",
+      "@react-navigation/stack": "^6.4.0",
     "expo": "~51.0.20",
     "expo-sqlite": "~14.0.4",
     "expo-status-bar": "~1.12.1",

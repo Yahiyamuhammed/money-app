@@ -132,6 +132,11 @@ const AddTransactionForm = ({ db, onTransactionAdded, toggleForm }) => {
 };
 
 const HomeScreen = ({ navigation, db }) => {
+  console.log("enetered home screen");
+  // console.log("user :",user.email);
+  
+
+  
   const [totalBorrowed, setTotalBorrowed] = useState(0);
   const [totalLent, setTotalLent] = useState(0);
   const [transactions, setTransactions] = useState([]);
@@ -192,7 +197,7 @@ const HomeScreen = ({ navigation, db }) => {
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Dashboard</Text>
-        <ProfileIcon  />
+        <ProfileIcon />
       </View>
       <View style={styles.summaryContainer}>
       

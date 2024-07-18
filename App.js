@@ -5,13 +5,10 @@ import { createStackNavigator } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { ActivityIndicator, View, Text } from 'react-native';
 import { initDB } from './database/db';
-import { auth } from './auth/firebase'; // Ensure correct path
 
 import HomeScreen from './screens/HomeScreen';
 import HistoryScreen from './screens/HistoryScreen';
 import PersonHistoryScreen from './screens/PersonHistoryScreen';
-import LoginScreen from './screens/loginscreen';
-
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -51,21 +48,9 @@ const TabNavigator = ({ db }) => (
 
 export default function App() {
   const [db, setDb] = useState(null);
-  const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        setUser(user);
-        console.log('User logged in:', user.email); // Example log
-      } else {
-        // setCurrentUser(null);
-        console.log('No user logged in');
-      }
-      
-    });
-
     const setupDatabase = async () => {
       try {
         const database = await initDB();
@@ -76,8 +61,6 @@ export default function App() {
       }
     };
     setupDatabase();
-
-    return () => unsubscribe();
   }, []);
 
   if (error) {
@@ -98,7 +81,7 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      {user ? <TabNavigator db={db} /> : <LoginScreen />}
+      <TabNavigator db={db} /> 
     </NavigationContainer>
   );
 }

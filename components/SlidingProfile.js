@@ -1,35 +1,58 @@
-import React from 'react';
-import { View, Text, StyleSheet, Animated, Dimensions, TouchableWithoutFeedback } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Animated, Dimensions, TouchableWithoutFeedback, Image, TouchableOpacity } from 'react-native';
 import Modal from 'react-native-modal';
+import { signOut } from 'firebase/auth';
+import { auth } from '../auth/firebase';
+import LoginScreen from '../screens/loginscreen'; // Import the new LoginScreen component
 
 const { width, height } = Dimensions.get('window');
 
-const ProfileWindow = ({ isVisible, onClose }) => {
-  const windowWidth = width * 0.8; // Adjust as needed
-  const windowHeight = height * 0.4; // Adjust as needed
+const ProfileWindow = ({ isVisible, onClose, user }) => {
+    console.log("user :",user);
+    
+  const [showLoginScreen, setShowLoginScreen] = useState(false);
+  const windowWidth = width * 0.8;
+  const windowHeight = height * 0.5;
 
-  const slideAnim = React.useRef(new Animated.Value(0)).current; // Initial value at center
+  const slideAnim = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
     if (isVisible) {
       Animated.timing(slideAnim, {
-        toValue: 1, // Slide to full size
+        toValue: 1,
         duration: 300,
         useNativeDriver: true,
       }).start();
     } else {
       Animated.timing(slideAnim, {
-        toValue: 0, // Slide back to center
+        toValue: 0,
         duration: 300,
         useNativeDriver: true,
       }).start();
     }
   }, [isVisible]);
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      onClose();
+    } catch (error) {
+      console.error('Error signing out: ', error);
+    }
+  };
+
+  const handleLoginPress = () => {
+    setShowLoginScreen(true);
+  };
+
+  const handleLoginClose = () => {
+    setShowLoginScreen(false);
+  };
+
   return (
     <Modal
       isVisible={isVisible}
-      backdropOpacity={0.5} // Adjust backdrop opacity if needed
+      backdropOpacity={0.5}
       style={styles.modal}
     >
       <TouchableWithoutFeedback onPress={onClose}>
@@ -64,21 +87,34 @@ const ProfileWindow = ({ isVisible, onClose }) => {
                 },
               ]}
             >
-              {/* Your profile window content here */}
               <Text style={styles.title}>Profile</Text>
-              <View style={styles.menuItem}>
-                <Text>Menu Item 1</Text>
-              </View>
-              <View style={styles.menuItem}>
-                <Text>Menu Item 2</Text>
-              </View>
-              <View style={styles.menuItem}>
-                <Text>Menu Item 3</Text>
-              </View>
+              {user ? (
+                <View style={styles.profileDetails}>
+                  {user.photoURL && (
+                    <Image source={{ uri: user.photoURL }} style={styles.profileImage} />
+                  )}
+                  <Text style={styles.profileText}>Name: {user.displayName || 'N/A'}</Text>
+                  <Text style={styles.profileText}>Email: {user.email}</Text>
+                  <Text style={styles.profileText}>Phone Number: {user.phoneNumber}</Text>
+                  <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                    <Text style={styles.logoutButtonText}>Logout</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.loginContainer}>
+                  <Text style={styles.loginText}>
+                    Sign in to backup your data and view your profile information.
+                  </Text>
+                  <TouchableOpacity style={styles.loginButton} onPress={handleLoginPress}>
+                    <Text style={styles.loginButtonText}>Login</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </Animated.View>
           </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
+      {showLoginScreen && <LoginScreen isVisible={showLoginScreen} onClose={handleLoginClose} />}
     </Modal>
   );
 };
@@ -118,10 +154,54 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
-  menuItem: {
+  profileDetails: {
+    margin: 10,
+    marginBottom: 20,
+  },
+  profileImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 10,
+  },
+  profileText: {
+    fontSize: 16,
+    marginBottom: 5,
     padding: 10,
-    // borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+  },
+  logoutButton: {
+    marginTop: 'auto',
+    padding: 15,
+    backgroundColor: 'red',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  loginContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  loginText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 20,
+    color: '#555',
+  },
+  loginButton: {
+    backgroundColor: '#007bff',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  loginButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 

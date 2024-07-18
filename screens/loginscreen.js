@@ -1,96 +1,174 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
-import { auth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from '../auth/firebase'; // Ensure correct path
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import Modal from 'react-native-modal';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { auth } from '../auth/firebase';
+import Icon from 'react-native-vector-icons/Ionicons';
 
-const LoginScreen = ({ navigation }) => {
+
+const LoginScreen = ({ isVisible, onClose }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSignIn = async () => {
+  const handleAuth = async () => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      console.log("Signed in successfully");
-    } catch (error) {
-      if (error.code === 'auth/invalid-email') {
-        setError('Invalid email address.');
-      } else if (error.code === 'auth/user-not-found') {
-        setError('User not found. Please sign up.');
-      } else if (error.code === 'auth/wrong-password') {
-        setError('Incorrect password.');
+      setError('');
+      if (isLogin) {
+        await signInWithEmailAndPassword(auth, email, password);
       } else {
-        setError('Login failed. Please try again later.');
+        if (!name || !phoneNumber) {
+          setError('Please fill in all fields');
+          return;
+        }
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(userCredential.user, {
+          displayName: name,
+          phoneNumber: phoneNumber
+        });
       }
-      console.error('Firebase error:', error);
+      onClose();
+    } catch (error) {
+      console.error('Authentication error:', error);
+      setError(error.message);
     }
   };
-  
-  const handleSignUp = async () => {
-    try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      console.log("Signed up successfully");
-    } catch (error) {
-      if (error.code === 'auth/weak-password') {
-        setError('Weak password. Please choose a stronger one.');
-      } else if (error.code === 'auth/email-already-in-use') {
-        setError('Email address is already in use.');
-      } else if (error.code === 'auth/invalid-email') {
-        setError('Invalid email address.');
-      } else {
-        setError('Sign up failed. Please try again later.');
-      }
-      console.error('Firebase error:', error);
-    }
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
-  
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      <Button title="Sign In" onPress={handleSignIn} />
-      <Button title="Sign Up" onPress={handleSignUp} />
-    </View>
+    <Modal isVisible={isVisible} style={styles.modal}>
+      <View style={styles.container}>
+        <Text style={styles.title}>{isLogin ? 'Login' : 'Sign Up'}</Text>
+        {!isLogin && (
+          <>
+            <TextInput
+              style={styles.input}
+              placeholder="Name"
+              value={name}
+              onChangeText={setName}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Phone Number"
+              value={phoneNumber}
+              onChangeText={setPhoneNumber}
+              keyboardType="phone-pad"
+            />
+          </>
+        )}
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+          />
+          <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
+            <Icon name={showPassword ? 'eye-off' : 'eye'} size={24} color="#007bff" />
+          </TouchableOpacity>
+        </View>
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        <TouchableOpacity style={styles.authButton} onPress={handleAuth}>
+          <Text style={styles.authButtonText}>{isLogin ? 'Login' : 'Sign Up'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
+          <Text style={styles.switchText}>
+            {isLogin ? 'Need an account? Sign Up' : 'Already have an account? Login'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+          <Text style={styles.closeButtonText}>Close</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  modal: {
+    margin: 0,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  container: {
+    backgroundColor: 'white',
     padding: 20,
+    borderRadius: 10,
+    width: '80%',
   },
   title: {
     fontSize: 24,
+    fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
   },
   input: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 20,
-    paddingHorizontal: 10,
+    backgroundColor: '#f0f0f0',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
   },
-  error: {
-    color: 'red',
-    marginBottom: 20,
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 10,
+  },
+  eyeIcon: {
+    padding: 10,
+  },
+  authButton: {
+    backgroundColor: '#007bff',
+    padding: 15,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  authButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  switchText: {
+    marginTop: 15,
+    color: '#007bff',
     textAlign: 'center',
+  },
+  closeButton: {
+    marginTop: 20,
+    padding: 10,
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    color: '#555',
+    fontSize: 16,
+  },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+    marginBottom: 10,
   },
 });
 
-export default LoginScreen;
+export default LoginScreen; 
