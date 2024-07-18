@@ -9,6 +9,7 @@ import { initDB } from './database/db';
 import HomeScreen from './screens/HomeScreen';
 import HistoryScreen from './screens/HistoryScreen';
 import PersonHistoryScreen from './screens/PersonHistoryScreen';
+import ProfileScreen from './screens/ProfileScreen'; // Import the ProfileScreen
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -29,7 +30,14 @@ const TabNavigator = ({ db }) => (
     initialRouteName="Home"
     screenOptions={({ route }) => ({
       tabBarIcon: ({ color, size }) => {
-        let iconName = route.name === 'Home' ? 'home-outline' : 'time-outline';
+        let iconName;
+        if (route.name === 'Home') {
+          iconName = 'home-outline';
+        } else if (route.name === 'History') {
+          iconName = 'time-outline';
+        } else if (route.name === 'Profile') {
+          iconName = 'person-outline';
+        }
         return <Icon name={iconName} size={size} color={color} />;
       },
       tabBarActiveTintColor: 'tomato',
@@ -42,6 +50,9 @@ const TabNavigator = ({ db }) => (
     </Tab.Screen>
     <Tab.Screen name="History" options={{ headerShown: false }}>
       {(props) => <HistoryStack {...props} db={db} />}
+    </Tab.Screen>
+    <Tab.Screen name="Profile" options={{ headerShown: false }}>
+      {(props) => <ProfileScreen {...props} db={db} />}
     </Tab.Screen>
   </Tab.Navigator>
 );
@@ -81,7 +92,7 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      <TabNavigator db={db} /> 
+      <TabNavigator db={db} />
     </NavigationContainer>
   );
 }

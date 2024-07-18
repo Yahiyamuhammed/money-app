@@ -22,7 +22,7 @@ import {
   getOrCreateNameId,
   getPersonIdByName
 } from '../database/db';
-import ProfileIcon from '../components/ProfileIcon'; // Import ProfileIcon
+// import ProfileIcon from '../components/ProfileIcon'; // Import ProfileIcon
 
 
 const AddTransactionForm = ({ db, onTransactionAdded, toggleForm }) => {
@@ -197,7 +197,7 @@ const HomeScreen = ({ navigation, db }) => {
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Dashboard</Text>
-        <ProfileIcon />
+        
       </View>
       <View style={styles.summaryContainer}>
       
