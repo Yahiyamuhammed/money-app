@@ -220,6 +220,8 @@ const HomeScreen = ({ navigation, db }) => {
 
   const handlePersonPress = async (personName) => {
     const nameId = await getPersonIdByName(db, personName);
+    console.log("person presseds ansd id : ",nameId , personName);
+    
     if (nameId) {
       navigation.navigate('History', {
         screen: 'PersonHistory',
@@ -285,9 +287,9 @@ const HomeScreen = ({ navigation, db }) => {
           data={transactions.slice(0, 5)}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => handlePersonPress(item.description)}>
+            <TouchableOpacity onPress={() => handlePersonPress(item.name)}>
               <View style={styles.transactionItem}>
-                <Text style={styles.transactionText}>{item.description}</Text>
+                <Text style={styles.transactionText}>{item.name}</Text>
                 <Text style={styles.transactionAmount}>
                   {item.type === 'borrowed' ? '-' : '+'}${parseFloat(item.amount).toFixed(2)}
                 </Text>

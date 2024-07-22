@@ -60,7 +60,7 @@ export const initDB = async () => {
 };
 export const dropTableUsers = async (db) => {
   try {
-    await db.execAsync('DROP TABLE users');
+    await db.execAsync('DROP TABLE offline_transactions');
     console.log('Users table dropped successfully');
   } catch (error) {
     console.error('Error dropping users table:', error);
@@ -87,13 +87,25 @@ export const getOrCreateNameId = async (db, name) => {
   }
 };
 
+// export const getTransactions = async (db) => {
+//   try {
+//     const transactions = await db.getAllAsync(`
+//       SELECT t.*, n.name as description
+//       FROM transactions t
+//       JOIN names n ON t.name_id = n.id
+//       ORDER BY t.date DESC
+//     `);
+//     return transactions;
+//   } catch (error) {
+//     console.error("Error getting transactions:", error);
+//     throw error;
+//   }
+// };
 export const getTransactions = async (db) => {
   try {
     const transactions = await db.getAllAsync(`
-      SELECT t.*, n.name as description
-      FROM transactions t
-      JOIN names n ON t.name_id = n.id
-      ORDER BY t.date DESC
+      SELECT * FROM offline_transactions
+      ORDER BY date DESC
     `);
     return transactions;
   } catch (error) {
@@ -102,34 +114,77 @@ export const getTransactions = async (db) => {
   }
 };
 
+// export const addTransaction = async (db, transaction) => {
+//   try {
+//     const transactionId = generateRandomId();
+//     await db.runAsync(
+//       'INSERT INTO transactions (id, amount, description, type, date, name_id) VALUES (?, ?, ?, ?, ?, ?)',
+//       [
+//         transactionId,
+//         parseFloat(transaction.amount),
+//         transaction.description,
+//         transaction.type,
+//         transaction.date,
+//         transaction.name_id
+//       ]
+//     );
+//     return transactionId;
+//   } catch (error) {
+//     console.error("Error adding transaction:", error);
+//     throw error;
+//   }
+// };
+
 export const addTransaction = async (db, transaction) => {
   try {
     const transactionId = generateRandomId();
     await db.runAsync(
-      'INSERT INTO transactions (id, amount, description, type, date, name_id) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO offline_transactions (id, amount, description, type, date, name_id, name, synced) VALUES (?, ?, ?, ?, ?, ?, ?, 0)',
       [
         transactionId,
         parseFloat(transaction.amount),
         transaction.description,
         transaction.type,
         transaction.date,
-        transaction.name_id
+        transaction.name_id,
+        transaction.name
       ]
     );
+    console.log("transaction added");
+    
     return transactionId;
   } catch (error) {
     console.error("Error adding transaction:", error);
     throw error;
   }
 };
+
+
+// export const getPersonTransactions = async (db, nameId) => {
+//   try {
+//     const transactions = await db.getAllAsync(`
+//       SELECT t.*, n.name as description
+//       FROM transactions t
+//       JOIN names n ON t.name_id = n.id
+//       WHERE t.name_id = ?
+//       ORDER BY t.date DESC
+//     `, [nameId]);
+//     return transactions;
+//   } catch (error) {
+//     console.error('Error getting person transactions:', error);
+//     throw error;
+//   }
+// };
+
 export const getPersonTransactions = async (db, nameId) => {
   try {
+    console.log("entered get person id",nameId);
+    
     const transactions = await db.getAllAsync(`
-      SELECT t.*, n.name as description
-      FROM transactions t
-      JOIN names n ON t.name_id = n.id
-      WHERE t.name_id = ?
-      ORDER BY t.date DESC
+      SELECT *
+      FROM offline_transactions
+      WHERE name_id = ?
+      ORDER BY date DESC
     `, [nameId]);
     return transactions;
   } catch (error) {
@@ -138,10 +193,25 @@ export const getPersonTransactions = async (db, nameId) => {
   }
 };
 
+// export const getPersonIdByName = async (db, personName) => {
+//   try {
+//     const result = await db.getFirstAsync('SELECT id FROM names WHERE name = ?', [personName]);
+//     return result ? result.id : null;
+//   } catch (error) {
+//     console.error('Error getting person ID:', error);
+//     throw error;
+//   }
+// };
+
 export const getPersonIdByName = async (db, personName) => {
   try {
-    const result = await db.getFirstAsync('SELECT id FROM names WHERE name = ?', [personName]);
-    return result ? result.id : null;
+    const result = await db.getFirstAsync(`
+      SELECT DISTINCT name_id
+      FROM offline_transactions
+      WHERE name = ?
+      LIMIT 1
+    `, [personName]);
+    return result ? result.name_id : null;
   } catch (error) {
     console.error('Error getting person ID:', error);
     throw error;

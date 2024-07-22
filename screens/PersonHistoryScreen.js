@@ -16,9 +16,13 @@ const PersonHistoryScreen = ({ route, db }) => {
   const [editDate, setEditDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  // useEffect(() => {
+  //   loadPersonTransactions();
+  // }, []);
+
   useEffect(() => {
     loadPersonTransactions();
-  }, []);
+  }, [nameId]);
 
   const loadPersonTransactions = async () => {
     const personTransactions = await getPersonTransactions(db, nameId);
@@ -113,6 +117,8 @@ const PersonHistoryScreen = ({ route, db }) => {
   };
 
   const renderTransaction = ({ item }) => (
+    console.log("csz",item),
+    
     <TouchableOpacity 
       onPress={() => handlePress(item)}
       onLongPress={() => handleLongPress(item)}
@@ -127,7 +133,7 @@ const PersonHistoryScreen = ({ route, db }) => {
           ]}
         >
           <View style={styles.transactionDetails}>
-            <Text style={styles.transactionText}>{item.description}</Text>
+            <Text style={styles.transactionText}>{item.name}</Text>
             <Text style={styles.transactionDate}>
               {new Date(item.date).toLocaleDateString()}
             </Text>

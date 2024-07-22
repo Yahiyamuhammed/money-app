@@ -66,6 +66,8 @@ const HistoryScreen = ({ navigation, db }) => {
       // If no options are open, navigate to PersonHistory
       const nameId = await getPersonIdByName(db, personName);
       if (nameId) {
+        console.log("person pressed in history");
+        
         navigation.navigate('PersonHistory', { nameId, personName });
       }
     }
@@ -133,7 +135,7 @@ const HistoryScreen = ({ navigation, db }) => {
 
   const renderTransaction = ({ item }) => (
     <TouchableOpacity 
-      onPress={() => handlePersonPress(item.description)}
+      onPress={() => handlePersonPress(item.name)}
       onLongPress={() => handleLongPress(item)}
       delayLongPress={500}
     >

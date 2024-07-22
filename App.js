@@ -20,7 +20,7 @@ const HistoryStack = ({ db }) => (
       {(props) => <HistoryScreen {...props} db={db} />}
     </Stack.Screen>
     <Stack.Screen name="PersonHistory" options={({ route }) => ({ title: route.params.personName })}>
-      {(props) => <PersonHistoryScreen {...props} db={db} />}
+      {(props) => <PersonHistoryScreen {...props} db={db} navigation={props.navigation} />}
     </Stack.Screen>
   </Stack.Navigator>
 );
