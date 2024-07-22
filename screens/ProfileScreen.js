@@ -56,7 +56,7 @@ const ProfileScreen = ({ navigation }) => {
     <ScrollView contentContainerStyle={styles.container}>
       {user ? (
         <>
-          <Text style={styles.label}>Name</Text>
+          <Text style={styles.label}>Nameascsdcsdc</Text>
           <Text style={styles.value}>{user.name}</Text>
 
           <Text style={styles.label}>Email</Text>
