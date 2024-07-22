@@ -40,6 +40,16 @@ export const initDB = async () => {
         name_id TEXT,
         FOREIGN KEY (name_id) REFERENCES names (id)
       );
+       CREATE TABLE IF NOT EXISTS offline_transactions (
+        id TEXT PRIMARY KEY,
+        amount REAL,
+        description TEXT,
+        type TEXT,
+        date TEXT,
+        name_id TEXT,
+         name TEXT,
+        synced INTEGER DEFAULT 0
+      );
     `);
     console.log("Database initialized successfully",db);
     return db;
@@ -188,58 +198,7 @@ export const deleteTransaction = async (db, transactionId) => {
 };
 
 
-// Function to hash passwords using expo-crypto
-const hashPassword = async (password) => {
-  const digest = await Crypto.digestStringAsync(
-    Crypto.CryptoDigestAlgorithm.SHA256,
-    password
-  );
-  return digest;
-};
-
-const comparePassword = async (password, hash) => {
-  const hashedPassword = await hashPassword(password);
-  return hashedPassword === hash;
-};
-// Function to create a user
-// export const createUser = async (db, name, email, phoneNumber, password) => {
-//   try {
-//     const userId = generateRandomId();
-//     const hashedPassword = await hashPassword(password);
-//     await db.runAsync(
-//       'INSERT INTO users (id, name, email, phoneNumber, password) VALUES (?, ?, ?, ?, ?)',
-//       [userId, name, email, phoneNumber, hashedPassword]
-//     );
-//     return userId;
-//   } catch (error) {
-//     console.error('Error creating user:', error);
-//     throw error;
-//   }
-// };
-
-// Function to find a user by email
-export const findUserByEmail = async (db, email) => {
-  try {
-    const result = await db.getFirstAsync('SELECT * FROM users WHERE email = ?', [email]);
-    return result;
-  } catch (error) {
-    console.error('Error finding user by email:', error);
-    throw error;
-  }
-};
-
-
-// Function to get user details by email
-export const getUserByEmail = async (db, email) => {
-  try {
-    const result = await db.getFirstAsync('SELECT name, email, phoneNumber FROM users WHERE email = ?', [email]);
-    return result;
-  } catch (error) {
-    console.error('Error getting user details by email:', error);
-    throw error;
-  }
-};  
-
+// firestore functions
 // Function to login with email and password
 export const loginWithEmailAndPassword = async (db, email, password) => {
   try {

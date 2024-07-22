@@ -29,33 +29,43 @@ import {
 
 const AddTransactionForm = ({ db, onTransactionAdded, toggleForm }) => {
   const [amount, setAmount] = useState('');
+  const [name, setName] = useState('');
+
   const [description, setDescription] = useState('');
   const [transactionType, setTransactionType] = useState('borrowed');
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const nameInputRef = useRef();
+  const descriptionRef = useRef();
   const amountInputRef = useRef();
 
   const handleAddTransaction = async () => {
     if (amount && description) {
       const personName = description.trim();
       const nameId = await getOrCreateNameId(db, personName);
+      console.log("enering add transatcction");
+      
 
       const newTransaction = {
         amount: parseFloat(amount),
-        description: personName,
+        name:name,
+        description: description,
         type: transactionType,
         date: date.toISOString(),
         name_id: nameId
       };
+      console.log("vslues",newTransaction);
+      
 
       await addTransaction(db, newTransaction);
       onTransactionAdded();
       setAmount('');
       setDescription('');
       setDate(new Date());
+      setName('');
       toggleForm();
+
     }
   };
 
@@ -81,8 +91,8 @@ const AddTransactionForm = ({ db, onTransactionAdded, toggleForm }) => {
         ref={nameInputRef}
         style={styles.input}
         placeholder="Name"
-        value={description}
-        onChangeText={setDescription}
+        value={name}
+        onChangeText={setName}
         returnKeyType="next"
         onSubmitEditing={() => amountInputRef.current.focus()}
         blurOnSubmit={false}
@@ -112,6 +122,17 @@ const AddTransactionForm = ({ db, onTransactionAdded, toggleForm }) => {
           onChange={onDateChange}
         />
       )}
+      <TextInput
+          ref={descriptionRef}
+          style={styles.input}
+          placeholder="Description"
+          value={description}
+          onChangeText={setDescription}
+          returnKeyType="next"
+          onSubmitEditing={() => amountInputRef.current.focus()}
+          blurOnSubmit={false}
+      />
+
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={[styles.typeButton, transactionType === 'borrowed' && styles.typeButtonActive]}
@@ -147,6 +168,8 @@ const HomeScreen = ({ navigation, db }) => {
   const [transactions, setTransactions] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [description, setDescription] = useState('');
+
 
   const loadData = async () => {
     const loadedTransactions = await getTransactions(db);
