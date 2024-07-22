@@ -20,8 +20,10 @@ import {
   updateTotals, 
   getTotals, 
   getOrCreateNameId,
-  getPersonIdByName
+  getPersonIdByName,
+  dropTableUsers
 } from '../database/db';
+
 // import ProfileIcon from '../components/ProfileIcon'; // Import ProfileIcon
 
 
@@ -133,6 +135,9 @@ const AddTransactionForm = ({ db, onTransactionAdded, toggleForm }) => {
 
 const HomeScreen = ({ navigation, db }) => {
   console.log("enetered home screen");
+  
+  // dropTableUsers()
+  
   // console.log("user :",user.email);
   
 
@@ -165,7 +170,15 @@ const HomeScreen = ({ navigation, db }) => {
   useEffect(() => {
     loadData();
   }, [db]);
-
+  // useEffect(() => {
+  //   const initAndDropTable = async () => {
+  //     // const db = await initDB();
+  //     await dropTableUsers(db); // Call dropTableUsers only after db is initialized
+  //     loadData();
+  //   };
+  
+  //   initAndDropTable();
+  // }, [])
   const onRefresh = async () => {
     setRefreshing(true);
     await loadData();

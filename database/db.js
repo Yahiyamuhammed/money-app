@@ -1,5 +1,11 @@
 import * as SQLite from 'expo-sqlite';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+// import bcrypt from 'bcryptjs';
+import * as Crypto from 'expo-crypto';
+
+import { auth, db } from '../auth/firebase';
+import { createUserWithEmailAndPassword , signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc,getDoc  } from 'firebase/firestore';
 
 const DB_NAME = 'mymoney.db';
 
@@ -13,9 +19,13 @@ export const initDB = async () => {
     const db = await SQLite.openDatabaseAsync(DB_NAME);
     await db.execAsync(`
 
-    
-
-      
+     CREATE TABLE IF NOT EXISTS user (
+          id TEXT PRIMARY KEY,
+          name TEXT,
+          email TEXT UNIQUE,
+          phoneNumber TEXT
+        );
+     
       CREATE TABLE IF NOT EXISTS names (
         id TEXT PRIMARY KEY,
         name TEXT UNIQUE
@@ -31,13 +41,22 @@ export const initDB = async () => {
         FOREIGN KEY (name_id) REFERENCES names (id)
       );
     `);
-    console.log("Database initialized successfully");
+    console.log("Database initialized successfully",db);
     return db;
   } catch (error) {
     console.error("Error initializing database:", error);
     throw error;
   }
 };
+export const dropTableUsers = async (db) => {
+  try {
+    await db.execAsync('DROP TABLE users');
+    console.log('Users table dropped successfully');
+  } catch (error) {
+    console.error('Error dropping users table:', error);
+  }
+};
+
 export const getOrCreateNameId = async (db, name) => {
   try {
     let result = await db.getFirstAsync('SELECT id FROM names WHERE name = ?', [name]);
@@ -164,6 +183,181 @@ export const deleteTransaction = async (db, transactionId) => {
     await db.runAsync('DELETE FROM transactions WHERE id = ?', [transactionId]);
   } catch (error) {
     console.error("Error deleting transaction:", error);
+    throw error;
+  }
+};
+
+
+// Function to hash passwords using expo-crypto
+const hashPassword = async (password) => {
+  const digest = await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    password
+  );
+  return digest;
+};
+
+const comparePassword = async (password, hash) => {
+  const hashedPassword = await hashPassword(password);
+  return hashedPassword === hash;
+};
+// Function to create a user
+// export const createUser = async (db, name, email, phoneNumber, password) => {
+//   try {
+//     const userId = generateRandomId();
+//     const hashedPassword = await hashPassword(password);
+//     await db.runAsync(
+//       'INSERT INTO users (id, name, email, phoneNumber, password) VALUES (?, ?, ?, ?, ?)',
+//       [userId, name, email, phoneNumber, hashedPassword]
+//     );
+//     return userId;
+//   } catch (error) {
+//     console.error('Error creating user:', error);
+//     throw error;
+//   }
+// };
+
+// Function to find a user by email
+export const findUserByEmail = async (db, email) => {
+  try {
+    const result = await db.getFirstAsync('SELECT * FROM users WHERE email = ?', [email]);
+    return result;
+  } catch (error) {
+    console.error('Error finding user by email:', error);
+    throw error;
+  }
+};
+
+
+// Function to get user details by email
+export const getUserByEmail = async (db, email) => {
+  try {
+    const result = await db.getFirstAsync('SELECT name, email, phoneNumber FROM users WHERE email = ?', [email]);
+    return result;
+  } catch (error) {
+    console.error('Error getting user details by email:', error);
+    throw error;
+  }
+};  
+
+// Function to login with email and password
+export const loginWithEmailAndPassword = async (db, email, password) => {
+  try {
+    const user = await findUserByEmail(db, email);
+    if (user && await comparePassword(password, user.password)) {
+      return user;
+    } else {
+      return null; // Login failed
+    }
+  } catch (error) {
+    console.error('Error logging in:', error);
+    throw error;
+  }
+};
+
+export const createUser = async (email, password, name, phoneNumber) => {
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    await setDoc(doc(db, 'users', user.uid), {
+      name,
+      email,
+      phoneNumber
+    });
+    console.log('User registered and data saved in Firestore:', user);
+    return user;  // Return the user object
+  } catch (error) {
+    console.error('Error registering user and saving data:', error);
+    throw error;  // Throw the error so it can be caught in handleAuth
+  }
+};
+
+
+export const loginUser = async (email, password) => {
+  try {
+    // Sign in user with email and password
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    // Fetch additional user details from Firestore
+    const userDocRef = doc(db, 'users', user.uid);
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (userDocSnap.exists()) {
+      const userData = userDocSnap.data();
+      return {
+        uid: user.uid,
+        email: user.email,
+        name: userData.name,
+        phoneNumber: userData.phoneNumber
+      };
+    } else {
+      console.log('No such document!');
+      return {
+        uid: user.uid,
+        email: user.email
+      };
+    }
+  } catch (error) {
+    console.error('Error logging in user:', error);
+    throw error;
+  }
+};
+
+// db.js
+
+export const storeLoginData = async (user) => {
+  try {
+    console.log("storing locally");
+    
+    const db = await initDB();
+    const { uid, name, email, phoneNumber } = user;
+    await db.runAsync(
+      `INSERT OR REPLACE INTO user (id, name, email, phoneNumber) VALUES (?, ?, ?, ?);`,
+      [uid, name, email, phoneNumber]
+    );
+    console.log("User login data stored successfully", db);
+  } catch (error) {
+    console.error("Error storing user login data:", error);
+    throw error;
+  }
+};
+
+export const getLoginData = async () => {
+  try {
+    const db = await initDB();
+    const result = await db.getFirstAsync(
+      `SELECT * FROM user ;`
+    );
+    
+    if (result) {
+      console.log("Retrieved user data:", result);
+      return result;
+    } else {
+      console.log("No user data found");
+      return null;
+    }
+  } catch (error) {
+    console.error("Error getting user login data:", error);
+    throw error;
+  }
+};
+
+export const signOutUser = async () => {
+  try {
+    const db = await initDB();
+    
+    // Delete all data from the user table
+    await db.runAsync('DELETE FROM user;');
+    
+    console.log("User data deleted successfully");
+    
+    // You might also want to sign out the user from Firebase
+    await auth.signOut();
+    
+    console.log("User signed out successfully");
+  } catch (error) {
+    console.error("Error signing out user:", error);
     throw error;
   }
 };

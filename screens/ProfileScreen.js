@@ -1,40 +1,55 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Button, StyleSheet, ScrollView,Alert } from 'react-native';
 import LoginScreen from './loginscreen';
-
-const mockDB = {
-  getUser: () => {
-    // Mimic fetching user from database
-    return {
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      phoneNumber: '+1234567890'
-    };
-  }
-};
+import { initDB, getLoginData ,signOutUser} from '../database/db'; // Adjust the import path as needed
 
 const ProfileScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
   const [isLoginVisible, setIsLoginVisible] = useState(false);
 
   useEffect(() => {
-    // Mimic fetching user data from the database
-    const userData = mockDB.getUser();
-    setUser(userData);
+    const fetchUserData = async () => {
+      try {
+        // console.log("trying loging");
+        
+        const userData = await getLoginData();
+        console.log("user data: ",userData);
+        
+        setUser(userData);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    fetchUserData();
   }, []);
 
   const handleSignOut = () => {
-    // Sign out logic here
-    console.log('User signed out');
-    setUser(null);
-    setIsLoginVisible(true); // Show the login screen
+    // Implement your sign-out logic here
+    
+    // setUser(null);
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Yes", onPress: () => {
+        
+        signOutUser();
+        setUser(null);
+        console.log('User signed out');
+      }}
+    ]);
+    // Show the login screen after sign-out if needed
+    // setIsLoginVisible(true);
   };
 
-  const handleLoginClose = () => {
+  const handleLoginClose = async () => {
     setIsLoginVisible(false);
-    // Fetch user again after login (mimic behavior)
-    const userData = mockDB.getUser();
-    setUser(userData);
+    // Fetch user data again after login (replace with actual login logic)
+    const db = await initDB();
+    const email = 'john.doe@example.com'; // Replace with actual logged-in user email or use authentication context
+    const userData = await getLoginData(db, email);
+    if (userData) {
+      setUser(userData);
+    }
   };
 
   return (
@@ -70,7 +85,7 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#f5f5f5',
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   label: {
     fontSize: 16,

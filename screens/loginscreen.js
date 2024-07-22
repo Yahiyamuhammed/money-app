@@ -1,10 +1,10 @@
+// LoginScreen.js
+
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Modal from 'react-native-modal';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth } from '../auth/firebase';
 import Icon from 'react-native-vector-icons/Ionicons';
-
+import { initDB, createUser, loginWithEmailAndPassword,loginUser ,storeLoginData } from '../database/db'; // Adjust the import path as needed
 
 const LoginScreen = ({ isVisible, onClose }) => {
   const [email, setEmail] = useState('');
@@ -18,25 +18,34 @@ const LoginScreen = ({ isVisible, onClose }) => {
   const handleAuth = async () => {
     try {
       setError('');
+  
       if (isLogin) {
-        await signInWithEmailAndPassword(auth, email, password);
+        const user = await loginUser(email, password);
+        if (user) {
+          console.log("name:",user.displayName," ph:",user.phoneNumber,"email: ",user.email," uid:",user.uid);
+          
+          await storeLoginData({ uid: user.uid, name: user.name, email: user.email, phoneNumber: user.phoneNumber });
+          Alert.alert('Login successful');
+          onClose();
+        } else {
+          setError('Invalid email or password');
+        }
       } else {
         if (!name || !phoneNumber) {
           setError('Please fill in all fields');
           return;
         }
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(userCredential.user, {
-          displayName: name,
-          phoneNumber: phoneNumber
-        });
+        const user = await createUser(email, password, name, phoneNumber);  // Get the user object from createUser
+        await storeLoginData({ uid: user.uid, name, email, phoneNumber });
+        Alert.alert('User registered successfully');
+        onClose();
       }
-      onClose();
     } catch (error) {
       console.error('Authentication error:', error);
       setError(error.message);
     }
   };
+
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -171,4 +180,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginScreen; 
+export default LoginScreen;
