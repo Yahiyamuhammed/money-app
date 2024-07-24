@@ -17,7 +17,8 @@ import {
   getTransactions, 
   getPersonIdByName, 
   updateTransaction, 
-  deleteTransaction 
+  deleteTransaction ,
+  mergeFirestoreTransactions
 } from '../database/db';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 // import { getTransactions, getPersonIdByName } from '../database/db';
@@ -33,10 +34,14 @@ const HistoryScreen = ({ navigation, db }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [editname, setEditName] = useState('');
+
 
 
   useEffect(() => {
     loadTransactions();
+    
+         
   }, [db]);
 
   useEffect(() => {
@@ -90,6 +95,7 @@ const HistoryScreen = ({ navigation, db }) => {
     setEditDescription(transaction.description);
     setEditType(transaction.type);
     setEditDate(new Date(transaction.date));
+    setEditName(transaction.name)
   };
 
   const handleDelete = (transactionId) => {
@@ -116,7 +122,8 @@ const HistoryScreen = ({ navigation, db }) => {
       amount: parseFloat(editAmount),
       description: editDescription,
       type: editType,
-      date: editDate.toISOString()
+      date: editDate.toISOString(),
+      name:editname
     };
 
     await updateTransaction(db, updatedTransaction);
@@ -146,7 +153,7 @@ const HistoryScreen = ({ navigation, db }) => {
           selectedItemId && selectedItemId !== item.id && styles.blurred
         ]}>
           <View style={styles.transactionDetails}>
-            <Text style={styles.transactionText}>{item.description}</Text>
+            <Text style={styles.transactionText}>{item.name}</Text>
             <Text style={styles.transactionDate}>{new Date(item.date).toLocaleDateString()}</Text>
           </View>
           <Text style={styles.transactionAmount}>
@@ -177,8 +184,8 @@ const HistoryScreen = ({ navigation, db }) => {
             <TextInput
               style={styles.input}
               placeholder="Name"
-              value={editDescription}
-              onChangeText={setEditDescription}
+              value={editname}
+              onChangeText={setEditName}
             />
             <TextInput
               style={styles.input}
@@ -203,6 +210,16 @@ const HistoryScreen = ({ navigation, db }) => {
                 }}
               />
             )}
+            <TextInput
+                // ref={descriptionRef}
+                style={styles.input}
+                placeholder="Description"
+                value={editDescription}
+                onChangeText={setEditDescription}
+                returnKeyType="next"
+                onSubmitEditing={() => amountInputRef.current.focus()}
+                blurOnSubmit={false}
+            />
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={[styles.typeButton, editType === 'borrowed' && styles.typeButtonActive]}

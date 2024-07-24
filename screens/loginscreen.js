@@ -4,7 +4,9 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { initDB, createUser, loginWithEmailAndPassword,loginUser ,storeLoginData } from '../database/db'; // Adjust the import path as needed
+import { initDB, createUser, loginWithEmailAndPassword,loginUser ,storeLoginData,syncTransactions, mergeFirestoreTransactions  } from '../database/db'; // Adjust the import path as needed
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const LoginScreen = ({ isVisible, onClose }) => {
   const [email, setEmail] = useState('');
@@ -14,17 +16,24 @@ const LoginScreen = ({ isVisible, onClose }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-
+  
   const handleAuth = async () => {
     try {
       setError('');
+      const db = await initDB(); // Initialize the database
   
       if (isLogin) {
         const user = await loginUser(email, password);
         if (user) {
-          console.log("name:",user.displayName," ph:",user.phoneNumber,"email: ",user.email," uid:",user.uid);
-          
+          console.log("User logged in:", user);
           await storeLoginData({ uid: user.uid, name: user.name, email: user.email, phoneNumber: user.phoneNumber });
+          await AsyncStorage.setItem('isUserLoggedIn', 'true');
+          await AsyncStorage.setItem('userEmail', email);
+          await AsyncStorage.setItem('userPassword', password); // Note: storing passwords is not recommended for production apps
+          
+          // Sync transactions immediately after login
+          await syncTransactions(db);
+          
           Alert.alert('Login successful');
           onClose();
         } else {
@@ -35,8 +44,16 @@ const LoginScreen = ({ isVisible, onClose }) => {
           setError('Please fill in all fields');
           return;
         }
-        const user = await createUser(email, password, name, phoneNumber);  // Get the user object from createUser
+        const user = await createUser(email, password, name, phoneNumber);
+        console.log("User registered:", user);
         await storeLoginData({ uid: user.uid, name, email, phoneNumber });
+        await AsyncStorage.setItem('isUserLoggedIn', 'true');
+        await AsyncStorage.setItem('userEmail', email);
+        await AsyncStorage.setItem('userPassword', password); // Note: storing passwords is not recommended for production apps
+        
+        // For new users, we only need to sync local transactions to Firestore
+        await syncTransactions(db);
+        
         Alert.alert('User registered successfully');
         onClose();
       }
@@ -45,7 +62,6 @@ const LoginScreen = ({ isVisible, onClose }) => {
       setError(error.message);
     }
   };
-
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);

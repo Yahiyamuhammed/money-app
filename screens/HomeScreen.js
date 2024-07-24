@@ -21,7 +21,9 @@ import {
   getTotals, 
   getOrCreateNameId,
   getPersonIdByName,
-  dropTableUsers
+  dropTableUsers,
+  mergeFirestoreTransactions,
+  syncTransactions
 } from '../database/db';
 
 // import ProfileIcon from '../components/ProfileIcon'; // Import ProfileIcon
@@ -43,8 +45,8 @@ const AddTransactionForm = ({ db, onTransactionAdded, toggleForm }) => {
   const handleAddTransaction = async () => {
     if (amount && description) {
       const personName = description.trim();
-      const nameId = await getOrCreateNameId(db, personName);
-      console.log("enering add transatcction");
+      const nameId = await getOrCreateNameId(db, name);
+      console.log("enering add transatcction",nameId);
       
 
       const newTransaction = {
@@ -192,6 +194,24 @@ const HomeScreen = ({ navigation, db }) => {
 
   useEffect(() => {
     loadData();
+    
+    // const homemerge = async () => {
+    //       // const db = await initDB();
+    //       console.log("merging home");
+          
+    //       mergeFirestoreTransactions(db)
+
+    //     }
+    //     homemerge()
+
+    // const syncInterval = setInterval(async () => {
+      
+    //     // const db = await initDB();
+    //     await syncTransactions(db);
+      
+    // },.05 * 60 * 1000); // Sync every 5 minutes
+  
+    // return () => clearInterval(syncInterval);
   }, [db]);
   // useEffect(() => {
   //   const initAndDropTable = async () => {

@@ -3,9 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // import bcrypt from 'bcryptjs';
 import * as Crypto from 'expo-crypto';
 
-import { auth, db } from '../auth/firebase';
+import { auth ,db} from '../auth/firebase';
+import { db as firestoreDb } from '../auth/firebase'; // Ensure this import is correct
 import { createUserWithEmailAndPassword , signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc,getDoc  } from 'firebase/firestore';
+import { doc, setDoc,getDoc,collection  ,getDocs, query, where, orderBy, limit,Timestamp ,serverTimestamp ,deleteDoc   } from 'firebase/firestore';
 
 const DB_NAME = 'mymoney.db';
 
@@ -48,7 +49,8 @@ export const initDB = async () => {
         date TEXT,
         name_id TEXT,
          name TEXT,
-        synced INTEGER DEFAULT 0
+        synced INTEGER DEFAULT 0,
+        timestamp TEXT
       );
     `);
     console.log("Database initialized successfully",db);
@@ -67,18 +69,43 @@ export const dropTableUsers = async (db) => {
   }
 };
 
+// export const getOrCreateNameId = async (db, name) => {
+//   try {
+//     let result = await db.getFirstAsync('SELECT id FROM names WHERE name = ?', [name]);
+//     if (result) {
+//       console.log("has id", result.id);
+//       return result.id;
+//     } else {
+//       console.log("entered random");
+//       const newId = generateRandomId();
+//       console.log("generated random", newId);
+//       await db.runAsync('INSERT INTO names (id, name) VALUES (?, ?)', [newId, name]);
+//       console.log("no id", newId);
+//       return newId;
+//     }
+//   } catch (error) {
+//     console.error("Error getting or creating name ID:", error);
+//     throw error;
+//   }
+// };
+
+
+
+
 export const getOrCreateNameId = async (db, name) => {
   try {
-    let result = await db.getFirstAsync('SELECT id FROM names WHERE name = ?', [name]);
+    console.log("name got :",name);
+    
+    let result = await db.getFirstAsync('SELECT DISTINCT name_id FROM offline_transactions WHERE name = ? LIMIT 1', [name]);
     if (result) {
-      console.log("has id", result.id);
-      return result.id;
+      console.log("Existing name_id found:", result.name_id);
+      return result.name_id;
     } else {
-      console.log("entered random");
+      console.log("Generating new name_id");
       const newId = generateRandomId();
-      console.log("generated random", newId);
-      await db.runAsync('INSERT INTO names (id, name) VALUES (?, ?)', [newId, name]);
-      console.log("no id", newId);
+      console.log("Generated new name_id:", newId);
+      // We don't insert into a separate names table anymore
+      // The new name_id will be used when inserting a new transaction
       return newId;
     }
   } catch (error) {
@@ -86,7 +113,6 @@ export const getOrCreateNameId = async (db, name) => {
     throw error;
   }
 };
-
 // export const getTransactions = async (db) => {
 //   try {
 //     const transactions = await db.getAllAsync(`
@@ -134,12 +160,14 @@ export const getTransactions = async (db) => {
 //     throw error;
 //   }
 // };
-
-export const addTransaction = async (db, transaction) => {
+export const addTransaction = async (db, transaction, isDownload = false) => {
   try {
-    const transactionId = generateRandomId();
+    const transactionId = transaction.id || generateRandomId();
+    const timestamp = transaction.timestamp || Date.now().toString();
+    const syncStatus = isDownload ? 1 : 0; // Set to 1 if it's a downloaded transaction
+    
     await db.runAsync(
-      'INSERT INTO offline_transactions (id, amount, description, type, date, name_id, name, synced) VALUES (?, ?, ?, ?, ?, ?, ?, 0)',
+      'INSERT INTO offline_transactions (id, amount, description, type, date, name_id, name, synced, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         transactionId,
         parseFloat(transaction.amount),
@@ -147,10 +175,17 @@ export const addTransaction = async (db, transaction) => {
         transaction.type,
         transaction.date,
         transaction.name_id,
-        transaction.name
+        transaction.name,
+        syncStatus,
+        timestamp
       ]
     );
-    console.log("transaction added");
+    console.log("Transaction added");
+    
+    // Trigger sync only if it's not a downloaded transaction
+    if (!isDownload) {
+      await syncTransactions(db);
+    }
     
     return transactionId;
   } catch (error) {
@@ -158,7 +193,6 @@ export const addTransaction = async (db, transaction) => {
     throw error;
   }
 };
-
 
 // export const getPersonTransactions = async (db, nameId) => {
 //   try {
@@ -246,27 +280,67 @@ export const getTotals = async () => {
 
 // Add these functions to your db.js file
 
-export const updateTransaction = async (db, transaction) => {
+// export const updateTransaction = async (db, transaction) => {
+//   try {
+//     await db.runAsync(
+//       'UPDATE transactions SET amount = ?, description = ?, type = ?, date = ? WHERE id = ?',
+//       [transaction.amount, transaction.description, transaction.type, transaction.date, transaction.id]
+//     );
+//   } catch (error) {
+//     console.error("Error updating transaction:", error);
+//     throw error;
+//   }
+// };
+
+// export const updateTransaction = async (db, transaction) => {
+//   try {
+//     await db.runAsync(
+//       'UPDATE offline_transactions SET amount = ?, description = ?, type = ?, date = ?, name_id = ?, name = ?, synced = 0 WHERE id = ?',
+//       [transaction.amount, transaction.description, transaction.type, transaction.date, transaction.name_id, transaction.name, transaction.id]
+//     );
+//   } catch (error) {
+//     console.error("Error updating transaction:", error);
+//     throw error;
+//   }
+// };
+export const updateTransaction = async (db, transaction, isDownload = false) => {
   try {
+    const timestamp = transaction.timestamp || Date.now().toString();
+    const syncStatus = isDownload ? 1 : 0; // Set to 1 if it's a downloaded transaction
+    
     await db.runAsync(
-      'UPDATE transactions SET amount = ?, description = ?, type = ?, date = ? WHERE id = ?',
-      [transaction.amount, transaction.description, transaction.type, transaction.date, transaction.id]
+      'UPDATE offline_transactions SET amount = ?, description = ?, type = ?, date = ?, name_id = ?, name = ?, synced = ?, timestamp = ? WHERE id = ?',
+      [transaction.amount, transaction.description, transaction.type, transaction.date, transaction.name_id, transaction.name, syncStatus, timestamp, transaction.id]
     );
+    console.log("Transaction updated");
+    
+    // Trigger sync only if it's not a downloaded transaction
+    if (!isDownload) {
+      await syncTransactions(db);
+    }
   } catch (error) {
     console.error("Error updating transaction:", error);
     throw error;
   }
 };
 
+// export const deleteTransaction = async (db, transactionId) => {
+//   try {
+//     await db.runAsync('DELETE FROM transactions WHERE id = ?', [transactionId]);
+//   } catch (error) {
+//     console.error("Error deleting transaction:", error);
+//     throw error;
+//   }
+// };
+
 export const deleteTransaction = async (db, transactionId) => {
   try {
-    await db.runAsync('DELETE FROM transactions WHERE id = ?', [transactionId]);
+    await db.runAsync('DELETE FROM offline_transactions WHERE id = ?', [transactionId]);
   } catch (error) {
     console.error("Error deleting transaction:", error);
     throw error;
   }
 };
-
 
 // firestore functions
 // Function to login with email and password
@@ -379,14 +453,237 @@ export const signOutUser = async () => {
     // Delete all data from the user table
     await db.runAsync('DELETE FROM user;');
     
-    console.log("User data deleted successfully");
+    // Clear all transactions
+    await db.runAsync('DELETE FROM offline_transactions;');
     
-    // You might also want to sign out the user from Firebase
+    // Clear AsyncStorage
+    await AsyncStorage.multiRemove(['isUserLoggedIn', 'lastSyncTimestamp', 'lastAutoSyncTime', 'userEmail', 'userPassword']);
+    
+    // Sign out the user from Firebase
     await auth.signOut();
     
-    console.log("User signed out successfully");
+    console.log("User signed out successfully and local data cleared");
   } catch (error) {
     console.error("Error signing out user:", error);
     throw error;
+  }
+};
+
+
+
+export const syncTransactions = async (sqliteDb) => {
+  try {
+    const isUserLoggedIn = await AsyncStorage.getItem('isUserLoggedIn');
+    if (isUserLoggedIn !== 'true') {
+      console.log("User not logged in, can't sync");
+      return;
+    }
+
+    let user = auth.currentUser;
+    if (!user) {
+      console.log("Firebase user not found, attempting to reauthenticate");
+      const email = await AsyncStorage.getItem('userEmail');
+      const password = await AsyncStorage.getItem('userPassword');
+      if (email && password) {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        user = userCredential.user;
+      } else {
+        console.log("Unable to reauthenticate, no stored credentials");
+        return;
+      }
+    }
+
+    // Upload local changes to Firestore
+    await uploadLocalChanges(sqliteDb, user);
+
+    // Download changes from Firestore
+    await downloadFirestoreChanges(sqliteDb, user);
+
+    console.log("Transactions synced successfully");
+  } catch (error) {
+    console.error("Error syncing transactions:", error);
+    throw error;
+  }
+};
+const uploadLocalChanges = async (sqliteDb, user) => {
+  try {
+    const unsyncedTransactions = await sqliteDb.getAllAsync(`
+      SELECT * FROM offline_transactions WHERE synced = 0
+    `);
+
+    console.log(`Found ${unsyncedTransactions.length} unsynced transactions to upload`);
+
+    const userDocRef = doc(firestoreDb, 'users', user.uid);
+    const transactionsCollection = collection(userDocRef, 'transactions');
+
+    for (const transaction of unsyncedTransactions) {
+      const transactionRef = doc(transactionsCollection, transaction.id);
+      const transactionData = {
+        amount: transaction.amount,
+        description: transaction.description,
+        type: transaction.type,
+        date: transaction.date,
+        name_id: transaction.name_id,
+        name: transaction.name,
+        timestamp: Timestamp.fromDate(new Date()), // Use serverTimestamp() for the current time
+        localTimestamp: transaction.timestamp || Date.now() // Store the local timestamp as well
+      };
+
+      await setDoc(transactionRef, transactionData, { merge: true });
+      await sqliteDb.runAsync('UPDATE offline_transactions SET synced = 1 WHERE id = ?', [transaction.id]);
+      console.log(`Uploaded and marked as synced: ${transaction.id}`);
+    }
+
+    console.log('All local changes uploaded successfully');
+  } catch (error) {
+    console.error('Error uploading local changes:', error);
+  }
+};
+
+
+
+
+const downloadFirestoreChanges = async (sqliteDb, user) => {
+  try {
+    console.log('Starting downloadFirestoreChanges for user:', user.uid);
+    
+    const transactionsCollection = collection(firestoreDb, 'users', user.uid, 'transactions');
+    
+    const lastSyncTimestamp = await AsyncStorage.getItem('lastSyncTimestamp') || '0';
+    console.log('Last sync timestamp:', lastSyncTimestamp);
+    
+    const newTransactionsQuery = query(
+      transactionsCollection,
+      where('localTimestamp', '>', lastSyncTimestamp.toString()),
+      orderBy('localTimestamp', 'asc')
+    );
+    
+    console.log('Executing Firestore query for new transactions...');
+    const firestoreTransactions = await getDocs(newTransactionsQuery);
+    
+    console.log('Firestore query results:', firestoreTransactions.size);
+    
+    if (firestoreTransactions.empty) {
+      console.log('No new transactions found in Firestore');
+      return;
+    }
+    
+    let latestTimestamp = lastSyncTimestamp;
+    
+    for (const doc of firestoreTransactions.docs) {
+      const transaction = doc.data();
+      console.log('Processing Firestore transaction:', doc.id, JSON.stringify(transaction));
+      
+      const timestamp = transaction.localTimestamp || Date.now().toString();
+      
+      const existingTransaction = await sqliteDb.getFirstAsync('SELECT * FROM offline_transactions WHERE id = ?', [doc.id]);
+      
+      if (!existingTransaction) {
+        console.log('Adding new transaction:', doc.id);
+        await addTransaction(sqliteDb, {
+          ...transaction,
+          id: doc.id,
+          synced: 1, // Mark as synced to prevent re-upload
+          timestamp
+        }, true); // Pass true to indicate this is a download operation
+      } else {
+        console.log('Updating existing transaction:', doc.id);
+        await updateTransaction(sqliteDb, {
+          ...transaction,
+          id: doc.id,
+          synced: 1, // Mark as synced to prevent re-upload
+          timestamp
+        }, true); // Pass true to indicate this is a download operation
+      }
+      
+      latestTimestamp = Math.max(parseInt(latestTimestamp), parseInt(timestamp)).toString();
+    }
+
+    // Update the last sync timestamp
+    await AsyncStorage.setItem('lastSyncTimestamp', latestTimestamp);
+    console.log('Updated last sync timestamp:', latestTimestamp);
+  } catch (error) {
+    console.error('Error in downloadFirestoreChanges:', error);
+    throw error;
+  }
+};
+
+
+export const afterLogin = async (db) => {
+  await syncTransactions(db);
+};
+export const mergeFirestoreTransactions = async (sqliteDb) => {
+  try {
+    const isUserLoggedIn = await AsyncStorage.getItem('isUserLoggedIn');
+    if (isUserLoggedIn !== 'true') {
+      console.log("User not logged in, can't fetch from Firestore");
+      return;
+    }
+
+    const user = auth.currentUser;
+    if (!user) {
+      console.log("Firebase user not found in mergeFirestoreTransactions, attempting to reauthenticate");
+      const email = await AsyncStorage.getItem('userEmail');
+      const password = await AsyncStorage.getItem('userPassword');
+      if (email && password) {
+        await signInWithEmailAndPassword(auth, email, password);
+      } else {
+        console.log("Unable to reauthenticate, no stored credentials");
+        return;
+      }
+    }
+
+    const userDocRef = doc(firestoreDb, 'users', user.uid);
+    const transactionsCollection = collection(userDocRef, 'transactions');
+    
+    const lastSyncTimestamp = await AsyncStorage.getItem('lastSyncTimestamp') || '0';
+    
+    const q = query(
+      transactionsCollection,
+      where('timestamp', '>', parseInt(lastSyncTimestamp)),
+      orderBy('timestamp', 'asc')
+    );
+    
+    const firestoreTransactions = await getDocs(q);
+    
+    for (const doc of firestoreTransactions.docs) {
+      const transaction = doc.data();
+      const existingTransaction = await sqliteDb.getFirstAsync('SELECT * FROM offline_transactions WHERE id = ?', [doc.id]);
+      
+      if (!existingTransaction) {
+        // New transaction, add it
+        await addTransaction(sqliteDb, {...transaction, id: doc.id, synced: 1});
+      } else if (transaction.timestamp > (existingTransaction.timestamp || 0)) {
+        // Existing transaction, update it if the Firestore version is newer
+        await updateTransaction(sqliteDb, {...transaction, id: doc.id, synced: 1});
+      }
+    }
+
+    // Update the last sync timestamp
+    const latestTimestamp = firestoreTransactions.docs.reduce(
+      (max, doc) => Math.max(max, doc.data().timestamp || 0),
+      parseInt(lastSyncTimestamp)
+    );
+    await AsyncStorage.setItem('lastSyncTimestamp', latestTimestamp.toString());
+
+    console.log("Firestore transactions merged successfully");
+  } catch (error) {
+    console.error("Error merging Firestore transactions:", error);
+    throw error;
+  }
+};
+export const autoSyncTransactions = async (sqliteDb) => {
+  try {
+    const lastAutoSyncTime = await AsyncStorage.getItem('lastAutoSyncTime') || '0';
+    const currentTime = Date.now();
+    const SYNC_INTERVAL = .01 * 60 * 1000; // 5 minutes in milliseconds
+    
+    if (currentTime - parseInt(lastAutoSyncTime) > SYNC_INTERVAL) {
+      await syncTransactions(sqliteDb);
+      await AsyncStorage.setItem('lastAutoSyncTime', currentTime.toString());
+      console.log("Auto-sync completed");
+    }
+  } catch (error) {
+    console.error("Error during auto-sync:", error);
   }
 };
