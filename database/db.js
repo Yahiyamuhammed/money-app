@@ -20,12 +20,13 @@ export const initDB = async () => {
     const db = await SQLite.openDatabaseAsync(DB_NAME);
     await db.execAsync(`
 
-     CREATE TABLE IF NOT EXISTS user (
-          id TEXT PRIMARY KEY,
-          name TEXT,
-          email TEXT UNIQUE,
-          phoneNumber TEXT
-        );
+    CREATE TABLE IF NOT EXISTS user (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      email TEXT,
+      phoneNumber TEXT,
+      isLoggedIn INTEGER DEFAULT 0
+    );
      
       CREATE TABLE IF NOT EXISTS names (
         id TEXT PRIMARY KEY,
@@ -52,6 +53,12 @@ export const initDB = async () => {
         synced INTEGER DEFAULT 0,
         timestamp TEXT
       );
+
+      CREATE TABLE IF NOT EXISTS deleted_transactions (
+        id TEXT PRIMARY KEY,
+        timestamp INTEGER DEFAULT (strftime('%s', 'now'))
+      );
+
     `);
     console.log("Database initialized successfully",db);
     return db;
@@ -62,7 +69,7 @@ export const initDB = async () => {
 };
 export const dropTableUsers = async (db) => {
   try {
-    await db.execAsync('DROP TABLE offline_transactions');
+    await db.execAsync('DROP TABLE user');
     console.log('Users table dropped successfully');
   } catch (error) {
     console.error('Error dropping users table:', error);
@@ -332,12 +339,54 @@ export const updateTransaction = async (db, transaction, isDownload = false) => 
 //     throw error;
 //   }
 // };
-
 export const deleteTransaction = async (db, transactionId) => {
   try {
+    // First, get the transaction details from SQLite
+    const transaction = await db.getFirstAsync('SELECT * FROM offline_transactions WHERE id = ?', [transactionId]);
+    
+    if (!transaction) {
+      console.log(`Transaction ${transactionId} not found in local database`);
+      return;
+    }
+
+    // Delete from SQLite
     await db.runAsync('DELETE FROM offline_transactions WHERE id = ?', [transactionId]);
+    console.log(`Transaction ${transactionId} deleted from local database`);
+
+    // Check if the transaction was synced with Firestore
+    if (transaction.synced === 1) {
+      // Check if user is logged in
+      const isUserLoggedIn = await AsyncStorage.getItem('isUserLoggedIn');
+      
+      if (isUserLoggedIn === 'true') {
+        const user = auth.currentUser;
+        
+        if (user) {
+          try {
+            // Delete from Firestore
+            const transactionRef = doc(firestoreDb, 'users', user.uid, 'transactions', transactionId);
+            await deleteDoc(transactionRef);
+            console.log(`Transaction ${transactionId} deleted from Firestore`);
+          } catch (firestoreError) {
+            console.error("Error deleting transaction from Firestore:", firestoreError);
+            // If Firestore deletion fails, we might want to mark this for future sync
+            await db.runAsync('INSERT INTO deleted_transactions (id) VALUES (?)', [transactionId]);
+          }
+        } else {
+          console.log("User not authenticated, skipping Firestore deletion");
+          // Mark for future deletion when user logs in
+          await db.runAsync('INSERT INTO deleted_transactions (id) VALUES (?)', [transactionId]);
+        }
+      } else {
+        console.log("User not logged in, skipping Firestore deletion");
+        // Mark for future deletion when user logs in
+        await db.runAsync('INSERT INTO deleted_transactions (id) VALUES (?)', [transactionId]);
+      }
+    } else {
+      console.log(`Transaction ${transactionId} was not synced, no need to delete from Firestore`);
+    }
   } catch (error) {
-    console.error("Error deleting transaction:", error);
+    console.error("Error in deleteTransaction:", error);
     throw error;
   }
 };
@@ -357,7 +406,6 @@ export const loginWithEmailAndPassword = async (db, email, password) => {
     throw error;
   }
 };
-
 export const createUser = async (email, password, name, phoneNumber) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -368,21 +416,18 @@ export const createUser = async (email, password, name, phoneNumber) => {
       phoneNumber
     });
     console.log('User registered and data saved in Firestore:', user);
-    return user;  // Return the user object
+    return user;
   } catch (error) {
     console.error('Error registering user and saving data:', error);
-    throw error;  // Throw the error so it can be caught in handleAuth
+    throw error;
   }
 };
 
-
 export const loginUser = async (email, password) => {
   try {
-    // Sign in user with email and password
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // Fetch additional user details from Firestore
     const userDocRef = doc(db, 'users', user.uid);
     const userDocSnap = await getDoc(userDocRef);
 
@@ -408,18 +453,17 @@ export const loginUser = async (email, password) => {
 };
 
 // db.js
-
 export const storeLoginData = async (user) => {
   try {
-    console.log("storing locally");
+    console.log("Storing user data locally");
     
     const db = await initDB();
     const { uid, name, email, phoneNumber } = user;
     await db.runAsync(
-      `INSERT OR REPLACE INTO user (id, name, email, phoneNumber) VALUES (?, ?, ?, ?);`,
+      `INSERT OR REPLACE INTO user (id, name, email, phoneNumber, isLoggedIn) VALUES (?, ?, ?, ?, 1);`,
       [uid, name, email, phoneNumber]
     );
-    console.log("User login data stored successfully", db);
+    console.log("User login data stored successfully");
   } catch (error) {
     console.error("Error storing user login data:", error);
     throw error;
@@ -448,27 +492,17 @@ export const getLoginData = async () => {
 
 export const signOutUser = async () => {
   try {
+    await auth.signOut();
     const db = await initDB();
-    
     // Delete all data from the user table
     await db.runAsync('DELETE FROM user;');
-    
-    // Clear all transactions
-    await db.runAsync('DELETE FROM offline_transactions;');
-    
-    // Clear AsyncStorage
-    await AsyncStorage.multiRemove(['isUserLoggedIn', 'lastSyncTimestamp', 'lastAutoSyncTime', 'userEmail', 'userPassword']);
-    
-    // Sign out the user from Firebase
-    await auth.signOut();
-    
-    console.log("User signed out successfully and local data cleared");
+    await db.runAsync('UPDATE user SET isLoggedIn = 0');
+    console.log('User signed out successfully');
   } catch (error) {
-    console.error("Error signing out user:", error);
+    console.error('Error signing out:', error);
     throw error;
   }
 };
-
 
 
 export const syncTransactions = async (sqliteDb) => {
@@ -493,11 +527,13 @@ export const syncTransactions = async (sqliteDb) => {
       }
     }
 
+    await syncDeletedTransactions(sqliteDb, user);
     // Upload local changes to Firestore
     await uploadLocalChanges(sqliteDb, user);
 
     // Download changes from Firestore
     await downloadFirestoreChanges(sqliteDb, user);
+   
 
     console.log("Transactions synced successfully");
   } catch (error) {
@@ -685,5 +721,24 @@ export const autoSyncTransactions = async (sqliteDb) => {
     }
   } catch (error) {
     console.error("Error during auto-sync:", error);
+  }
+};
+
+const syncDeletedTransactions = async (sqliteDb, user) => {
+  try {
+    const deletedTransactions = await sqliteDb.getAllAsync('SELECT * FROM deleted_transactions');
+    
+    for (const transaction of deletedTransactions) {
+      try {
+        const transactionRef = doc(firestoreDb, 'users', user.uid, 'transactions', transaction.id);
+        await deleteDoc(transactionRef);
+        await sqliteDb.runAsync('DELETE FROM deleted_transactions WHERE id = ?', [transaction.id]);
+        console.log(`Deleted transaction ${transaction.id} from Firestore`);
+      } catch (error) {
+        console.error(`Failed to delete transaction ${transaction.id} from Firestore:`, error);
+      }
+    }
+  } catch (error) {
+    console.error("Error syncing deleted transactions:", error);
   }
 };

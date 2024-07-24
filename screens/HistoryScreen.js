@@ -10,7 +10,8 @@ import {
   TextInput,
   Alert,
   Platform,
-  Animated
+  Animated,
+  ActivityIndicator
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { 
@@ -35,6 +36,8 @@ const HistoryScreen = ({ navigation, db }) => {
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [editname, setEditName] = useState('');
+  const [loadingUpdate, setLoadingUpdate] = useState(false);
+
 
 
 
@@ -117,6 +120,7 @@ const HistoryScreen = ({ navigation, db }) => {
   };
 
   const handleUpdate = async () => {
+    setLoadingUpdate(true);
     const updatedTransaction = {
       ...editingTransaction,
       amount: parseFloat(editAmount),
@@ -127,6 +131,8 @@ const HistoryScreen = ({ navigation, db }) => {
     };
 
     await updateTransaction(db, updatedTransaction);
+    setLoadingUpdate(false);
+
     setEditingTransaction(null);
     setSelectedItemId(null);
     loadTransactions();
@@ -235,7 +241,11 @@ const HistoryScreen = ({ navigation, db }) => {
               </TouchableOpacity>
             </View>
             <TouchableOpacity style={styles.submitButton} onPress={handleUpdate}>
-              <Text style={styles.submitButtonText}>Update Transaction</Text>
+            {loadingUpdate ? (
+                <ActivityIndicator size="small" color="#fff"  />
+              ) : (
+                <Text style={styles.submitButtonText}>Update Transaction</Text>
+              )}
             </TouchableOpacity>
           </View>
         )}

@@ -20,7 +20,7 @@ const LoginScreen = ({ isVisible, onClose }) => {
   const handleAuth = async () => {
     try {
       setError('');
-      const db = await initDB(); // Initialize the database
+      const db = await initDB();
   
       if (isLogin) {
         const user = await loginUser(email, password);
@@ -29,11 +29,11 @@ const LoginScreen = ({ isVisible, onClose }) => {
           await storeLoginData({ uid: user.uid, name: user.name, email: user.email, phoneNumber: user.phoneNumber });
           await AsyncStorage.setItem('isUserLoggedIn', 'true');
           await AsyncStorage.setItem('userEmail', email);
-          await AsyncStorage.setItem('userPassword', password); // Note: storing passwords is not recommended for production apps
-          
-          // Sync transactions immediately after login
+          // Instead of storing the password, store a hashed version or a token
+          await AsyncStorage.setItem('authToken', user.uid); // Using UID as a simple token
+  
           await syncTransactions(db);
-          
+  
           Alert.alert('Login successful');
           onClose();
         } else {
@@ -49,11 +49,10 @@ const LoginScreen = ({ isVisible, onClose }) => {
         await storeLoginData({ uid: user.uid, name, email, phoneNumber });
         await AsyncStorage.setItem('isUserLoggedIn', 'true');
         await AsyncStorage.setItem('userEmail', email);
-        await AsyncStorage.setItem('userPassword', password); // Note: storing passwords is not recommended for production apps
-        
-        // For new users, we only need to sync local transactions to Firestore
+        await AsyncStorage.setItem('authToken', user.uid);
+  
         await syncTransactions(db);
-        
+  
         Alert.alert('User registered successfully');
         onClose();
       }

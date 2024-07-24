@@ -71,32 +71,24 @@ export default function App() {
       try {
         const database = await initDB();
         setDb(database);
-        
+
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
           if (user) {
             console.log("User is signed in:", user.uid);
+            setUser(user);
             await AsyncStorage.setItem('isUserLoggedIn', 'true');
             await syncTransactions(database);
           } else {
             console.log("User is signed out");
+            setUser(null);
             await AsyncStorage.setItem('isUserLoggedIn', 'false');
-            await signOutUser();
           }
         });
-      
+
         // Attempt to reauthenticate if needed
         const isUserLoggedIn = await AsyncStorage.getItem('isUserLoggedIn');
         if (isUserLoggedIn === 'true' && !auth.currentUser) {
-          const email = await AsyncStorage.getItem('userEmail');
-          const password = await AsyncStorage.getItem('userPassword');
-          if (email && password) {
-            try {
-              await signInWithEmailAndPassword(auth, email, password);
-            } catch (error) {
-              console.error("Failed to reauthenticate:", error);
-              await signOutUser();
-            }
-          }
+          await reauthenticate();
         }
 
         // Cleanup subscription on unmount
@@ -110,6 +102,23 @@ export default function App() {
     setupDatabase();
   }, []);
 
+  const reauthenticate = async () => {
+    const email = await AsyncStorage.getItem('userEmail');
+    const password = await AsyncStorage.getItem('userPassword');
+    if (email && password) {
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        console.log("Reauthentication successful");
+      } catch (error) {
+        console.error("Failed to reauthenticate:", error);
+        // Clear stored credentials on failed reauthentication
+        await AsyncStorage.removeItem('userEmail');
+        await AsyncStorage.removeItem('userPassword');
+      }
+    }
+  };
+
+
 
   useEffect(() => {
     if (!db) return;
@@ -122,7 +131,7 @@ export default function App() {
           console.error('Error during periodic sync:', error);
         }
       
-    }, .5 * 60 * 1000); // Sync every 5 minutes when the app is active
+    }, .05 * 60 * 1000); // Sync every 5 minutes when the app is active
 
     return () => clearInterval(syncInterval);
   }, [db]);
