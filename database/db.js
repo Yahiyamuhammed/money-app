@@ -341,50 +341,34 @@ export const updateTransaction = async (db, transaction, isDownload = false) => 
 // };
 export const deleteTransaction = async (db, transactionId) => {
   try {
-    // First, get the transaction details from SQLite
-    const transaction = await db.getFirstAsync('SELECT * FROM offline_transactions WHERE id = ?', [transactionId]);
-    
-    if (!transaction) {
-      console.log(`Transaction ${transactionId} not found in local database`);
-      return;
-    }
-
     // Delete from SQLite
     await db.runAsync('DELETE FROM offline_transactions WHERE id = ?', [transactionId]);
     console.log(`Transaction ${transactionId} deleted from local database`);
 
-    // Check if the transaction was synced with Firestore
-    if (transaction.synced === 1) {
-      // Check if user is logged in
-      const isUserLoggedIn = await AsyncStorage.getItem('isUserLoggedIn');
-      
-      if (isUserLoggedIn === 'true') {
-        const user = auth.currentUser;
-        
-        if (user) {
-          try {
-            // Delete from Firestore
-            const transactionRef = doc(firestoreDb, 'users', user.uid, 'transactions', transactionId);
-            await deleteDoc(transactionRef);
-            console.log(`Transaction ${transactionId} deleted from Firestore`);
-          } catch (firestoreError) {
-            console.error("Error deleting transaction from Firestore:", firestoreError);
-            // If Firestore deletion fails, we might want to mark this for future sync
-            await db.runAsync('INSERT INTO deleted_transactions (id) VALUES (?)', [transactionId]);
-          }
-        } else {
-          console.log("User not authenticated, skipping Firestore deletion");
-          // Mark for future deletion when user logs in
-          await db.runAsync('INSERT INTO deleted_transactions (id) VALUES (?)', [transactionId]);
-        }
-      } else {
-        console.log("User not logged in, skipping Firestore deletion");
-        // Mark for future deletion when user logs in
-        await db.runAsync('INSERT INTO deleted_transactions (id) VALUES (?)', [transactionId]);
+    const isUserLoggedIn = await AsyncStorage.getItem('isUserLoggedIn');
+    const user = auth.currentUser;
+    
+    if (isUserLoggedIn === 'true' && user) {
+      try {
+        // Mark as deleted in Firestore
+        const transactionRef = doc(firestoreDb, 'users', user.uid, 'transactions', transactionId);
+        await setDoc(transactionRef, { 
+          deleted: true, 
+          timestamp: serverTimestamp(),
+          localDeletionTimestamp: Date.now()
+        }, { merge: true });
+        console.log(`Transaction ${transactionId} marked as deleted in Firestore`);
+      } catch (firestoreError) {
+        console.error("Error marking transaction as deleted in Firestore:", firestoreError);
+        await db.runAsync('INSERT INTO deleted_transactions (id, timestamp) VALUES (?, ?)', [transactionId, Date.now()]);
       }
     } else {
-      console.log(`Transaction ${transactionId} was not synced, no need to delete from Firestore`);
+      console.log("User not logged in or authenticated, marking for future sync");
+      await db.runAsync('INSERT INTO deleted_transactions (id, timestamp) VALUES (?, ?)', [transactionId, Date.now()]);
     }
+
+    // Trigger immediate sync
+    await syncTransactions(db);
   } catch (error) {
     console.error("Error in deleteTransaction:", error);
     throw error;
@@ -494,16 +478,18 @@ export const signOutUser = async () => {
   try {
     await auth.signOut();
     const db = await initDB();
+    await db.runAsync('DELETE FROM offline_transactions;');
     // Delete all data from the user table
     await db.runAsync('DELETE FROM user;');
     await db.runAsync('UPDATE user SET isLoggedIn = 0');
+    // Clear the lastSyncTimestamp
+    await AsyncStorage.removeItem('lastSyncTimestamp');
     console.log('User signed out successfully');
   } catch (error) {
     console.error('Error signing out:', error);
     throw error;
   }
 };
-
 
 export const syncTransactions = async (sqliteDb) => {
   try {
@@ -513,27 +499,20 @@ export const syncTransactions = async (sqliteDb) => {
       return;
     }
 
-    let user = auth.currentUser;
+    const user = auth.currentUser;
     if (!user) {
-      console.log("Firebase user not found, attempting to reauthenticate");
-      const email = await AsyncStorage.getItem('userEmail');
-      const password = await AsyncStorage.getItem('userPassword');
-      if (email && password) {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        user = userCredential.user;
-      } else {
-        console.log("Unable to reauthenticate, no stored credentials");
-        return;
-      }
+      console.log("Firebase user not found, can't sync");
+      return;
     }
 
+    // First, sync deletions
     await syncDeletedTransactions(sqliteDb, user);
-    // Upload local changes to Firestore
+
+    // Then, upload local changes
     await uploadLocalChanges(sqliteDb, user);
 
-    // Download changes from Firestore
+    // Finally, download changes from Firestore
     await downloadFirestoreChanges(sqliteDb, user);
-   
 
     console.log("Transactions synced successfully");
   } catch (error) {
@@ -541,6 +520,30 @@ export const syncTransactions = async (sqliteDb) => {
     throw error;
   }
 };
+
+const syncDeletedTransactions = async (sqliteDb, user) => {
+  try {
+    const deletedTransactions = await sqliteDb.getAllAsync('SELECT * FROM deleted_transactions');
+    
+    for (const transaction of deletedTransactions) {
+      try {
+        const transactionRef = doc(firestoreDb, 'users', user.uid, 'transactions', transaction.id);
+        await setDoc(transactionRef, { 
+          deleted: true, 
+          timestamp: serverTimestamp(),
+          localDeletionTimestamp: transaction.timestamp
+        }, { merge: true });
+        await sqliteDb.runAsync('DELETE FROM deleted_transactions WHERE id = ?', [transaction.id]);
+        console.log(`Marked transaction ${transaction.id} as deleted in Firestore`);
+      } catch (error) {
+        console.error(`Failed to mark transaction ${transaction.id} as deleted in Firestore:`, error);
+      }
+    }
+  } catch (error) {
+    console.error("Error syncing deleted transactions:", error);
+  }
+};
+
 const uploadLocalChanges = async (sqliteDb, user) => {
   try {
     const unsyncedTransactions = await sqliteDb.getAllAsync(`
@@ -549,11 +552,8 @@ const uploadLocalChanges = async (sqliteDb, user) => {
 
     console.log(`Found ${unsyncedTransactions.length} unsynced transactions to upload`);
 
-    const userDocRef = doc(firestoreDb, 'users', user.uid);
-    const transactionsCollection = collection(userDocRef, 'transactions');
-
     for (const transaction of unsyncedTransactions) {
-      const transactionRef = doc(transactionsCollection, transaction.id);
+      const transactionRef = doc(firestoreDb, 'users', user.uid, 'transactions', transaction.id);
       const transactionData = {
         amount: transaction.amount,
         description: transaction.description,
@@ -561,8 +561,9 @@ const uploadLocalChanges = async (sqliteDb, user) => {
         date: transaction.date,
         name_id: transaction.name_id,
         name: transaction.name,
-        timestamp: Timestamp.fromDate(new Date()), // Use serverTimestamp() for the current time
-        localTimestamp: transaction.timestamp || Date.now() // Store the local timestamp as well
+        timestamp: serverTimestamp(),
+        localTimestamp: transaction.timestamp,
+        deleted: false
       };
 
       await setDoc(transactionRef, transactionData, { merge: true });
@@ -576,9 +577,6 @@ const uploadLocalChanges = async (sqliteDb, user) => {
   }
 };
 
-
-
-
 const downloadFirestoreChanges = async (sqliteDb, user) => {
   try {
     console.log('Starting downloadFirestoreChanges for user:', user.uid);
@@ -590,8 +588,8 @@ const downloadFirestoreChanges = async (sqliteDb, user) => {
     
     const newTransactionsQuery = query(
       transactionsCollection,
-      where('localTimestamp', '>', lastSyncTimestamp.toString()),
-      orderBy('localTimestamp', 'asc')
+      where('timestamp', '>', new Date(parseInt(lastSyncTimestamp))),
+      orderBy('timestamp', 'asc')
     );
     
     console.log('Executing Firestore query for new transactions...');
@@ -599,40 +597,41 @@ const downloadFirestoreChanges = async (sqliteDb, user) => {
     
     console.log('Firestore query results:', firestoreTransactions.size);
     
-    if (firestoreTransactions.empty) {
-      console.log('No new transactions found in Firestore');
-      return;
-    }
-    
     let latestTimestamp = lastSyncTimestamp;
     
     for (const doc of firestoreTransactions.docs) {
       const transaction = doc.data();
       console.log('Processing Firestore transaction:', doc.id, JSON.stringify(transaction));
       
-      const timestamp = transaction.localTimestamp || Date.now().toString();
+      const timestamp = transaction.timestamp ? transaction.timestamp.toMillis() : Date.now();
       
-      const existingTransaction = await sqliteDb.getFirstAsync('SELECT * FROM offline_transactions WHERE id = ?', [doc.id]);
-      
-      if (!existingTransaction) {
-        console.log('Adding new transaction:', doc.id);
-        await addTransaction(sqliteDb, {
-          ...transaction,
-          id: doc.id,
-          synced: 1, // Mark as synced to prevent re-upload
-          timestamp
-        }, true); // Pass true to indicate this is a download operation
+      if (transaction.deleted) {
+        // If the transaction is marked as deleted in Firestore, delete it locally
+        await sqliteDb.runAsync('DELETE FROM offline_transactions WHERE id = ?', [doc.id]);
+        console.log(`Deleted transaction ${doc.id} locally`);
       } else {
-        console.log('Updating existing transaction:', doc.id);
-        await updateTransaction(sqliteDb, {
-          ...transaction,
-          id: doc.id,
-          synced: 1, // Mark as synced to prevent re-upload
-          timestamp
-        }, true); // Pass true to indicate this is a download operation
+        const existingTransaction = await sqliteDb.getFirstAsync('SELECT * FROM offline_transactions WHERE id = ?', [doc.id]);
+        
+        if (!existingTransaction) {
+          console.log('Adding new transaction:', doc.id);
+          await addTransaction(sqliteDb, {
+            ...transaction,
+            id: doc.id,
+            synced: 1,
+            timestamp
+          }, true);
+        } else {
+          console.log('Updating existing transaction:', doc.id);
+          await updateTransaction(sqliteDb, {
+            ...transaction,
+            id: doc.id,
+            synced: 1,
+            timestamp
+          }, true);
+        }
       }
       
-      latestTimestamp = Math.max(parseInt(latestTimestamp), parseInt(timestamp)).toString();
+      latestTimestamp = Math.max(latestTimestamp, timestamp).toString();
     }
 
     // Update the last sync timestamp
@@ -724,21 +723,21 @@ export const autoSyncTransactions = async (sqliteDb) => {
   }
 };
 
-const syncDeletedTransactions = async (sqliteDb, user) => {
-  try {
-    const deletedTransactions = await sqliteDb.getAllAsync('SELECT * FROM deleted_transactions');
+// const syncDeletedTransactions = async (sqliteDb, user) => {
+//   try {
+//     const deletedTransactions = await sqliteDb.getAllAsync('SELECT * FROM deleted_transactions');
     
-    for (const transaction of deletedTransactions) {
-      try {
-        const transactionRef = doc(firestoreDb, 'users', user.uid, 'transactions', transaction.id);
-        await deleteDoc(transactionRef);
-        await sqliteDb.runAsync('DELETE FROM deleted_transactions WHERE id = ?', [transaction.id]);
-        console.log(`Deleted transaction ${transaction.id} from Firestore`);
-      } catch (error) {
-        console.error(`Failed to delete transaction ${transaction.id} from Firestore:`, error);
-      }
-    }
-  } catch (error) {
-    console.error("Error syncing deleted transactions:", error);
-  }
-};
+//     for (const transaction of deletedTransactions) {
+//       try {
+//         const transactionRef = doc(firestoreDb, 'users', user.uid, 'transactions', transaction.id);
+//         await deleteDoc(transactionRef);
+//         await sqliteDb.runAsync('DELETE FROM deleted_transactions WHERE id = ?', [transaction.id]);
+//         console.log(`Deleted transaction ${transaction.id} from Firestore`);
+//       } catch (error) {
+//         console.error(`Failed to delete transaction ${transaction.id} from Firestore:`, error);
+//       }
+//     }
+//   } catch (error) {
+//     console.error("Error syncing deleted transactions:", error);
+//   }
+// };

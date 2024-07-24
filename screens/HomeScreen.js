@@ -10,7 +10,8 @@ import {
   TouchableWithoutFeedback,
   Platform,
   KeyboardAvoidingView,
-  RefreshControl
+  RefreshControl,
+  ActivityIndicator
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -37,6 +38,8 @@ const AddTransactionForm = ({ db, onTransactionAdded, toggleForm }) => {
   const [transactionType, setTransactionType] = useState('borrowed');
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [loading, setLoading] = useState(false);
+
 
   const nameInputRef = useRef();
   const descriptionRef = useRef();
@@ -44,6 +47,8 @@ const AddTransactionForm = ({ db, onTransactionAdded, toggleForm }) => {
 
   const handleAddTransaction = async () => {
     if (amount && description) {
+      setLoading(true);
+
       const personName = description.trim();
       const nameId = await getOrCreateNameId(db, name);
       console.log("enering add transatcction",nameId);
@@ -66,6 +71,7 @@ const AddTransactionForm = ({ db, onTransactionAdded, toggleForm }) => {
       setDescription('');
       setDate(new Date());
       setName('');
+      setLoading(false);
       toggleForm();
 
     }
@@ -150,7 +156,11 @@ const AddTransactionForm = ({ db, onTransactionAdded, toggleForm }) => {
         </TouchableOpacity>
       </View>
       <TouchableOpacity style={styles.submitButton} onPress={handleAddTransaction}>
-        <Text style={styles.submitButtonText}>Add Transaction</Text>
+      {loading ? (
+          <ActivityIndicator size="small" color="#FFF" />
+        ) : (
+          <Text style={styles.submitButtonText}>Add Transaction</Text>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -194,6 +204,7 @@ const HomeScreen = ({ navigation, db }) => {
 
   useEffect(() => {
     loadData();
+    
     
     // const homemerge = async () => {
     //       // const db = await initDB();
