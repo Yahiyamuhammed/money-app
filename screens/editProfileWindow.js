@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalView: {
-    backgroundColor: 'white',
+    backgroundColor: '#1A3636',
     borderRadius: 20,
     padding: 35,
     alignItems: 'center',
@@ -93,6 +93,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    color:'#fff'
   },
   input: {
     height: 40,
@@ -102,6 +103,8 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 15,
     paddingHorizontal: 10,
+    backgroundColor:'#D6BD98',
+    color:'#fff'
   },
   buttonContainer: {
     flexDirection: 'row',

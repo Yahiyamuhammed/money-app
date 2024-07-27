@@ -16,6 +16,8 @@ const PersonHistoryScreen = ({ route, db }) => {
   const [editDate, setEditDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [loadingUpdate, setLoadingUpdate] = useState(false);
+  const [loading, setLoading] = useState(false);
+
 
 
   // useEffect(() => {

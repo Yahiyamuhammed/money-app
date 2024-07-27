@@ -20,7 +20,16 @@ const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 const HistoryStack = ({ db }) => (
-  <Stack.Navigator>
+  <Stack.Navigator
+  screenOptions={{
+    headerStyle: {
+      backgroundColor: '#1A3636', // Replace with your desired color
+    },
+    headerTintColor: '#fff', // Replace with your desired color
+    headerTitleStyle: {
+      color: '#fff', // Replace with your desired color
+    },
+  }}>
     <Stack.Screen name="HistoryList" options={{ headerShown: false }}>
       {(props) => <HistoryScreen {...props} db={db} />}
     </Stack.Screen>

@@ -38,7 +38,7 @@ const ProfileScreen = ({ navigation }) => {
   const handleUpdateProfile = async (updatedData) => {
     try {
       await updateUserProfile(user.id, updatedData);
-      setUser({ ...user, ...updatedData });
+      setUser(updatedData);
       Alert.alert("Success", "Profile updated successfully!");
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -79,10 +79,10 @@ const ProfileScreen = ({ navigation }) => {
         {user ? (
           <>
             <LinearGradient
-              colors={['#6DD5FA', '#FFFFFF']}
+              colors={['#D6BD98', '#FFFFFF']}
               style={styles.header}
             >
-              <Image source={{ uri: user.profilePicture || defaultProfilePicture }} style={styles.profileImage} />
+              <Image source={ defaultProfilePicture } style={styles.profileImage} />
               <Text style={styles.name}>{user.name}</Text>
             </LinearGradient>
             <TouchableOpacity style={styles.editButton} onPress={() => setIsEditModalVisible(true)}>
@@ -91,13 +91,13 @@ const ProfileScreen = ({ navigation }) => {
 
             <View style={styles.infoContainer}>
               <View style={styles.infoItem}>
-                <MaterialIcons name="email" size={24} color="#666" style={styles.icon} />
+                <MaterialIcons name="email" size={24} color="#fff" style={styles.icon} />
                 <Text style={styles.label}>Email</Text>
                 <Text style={styles.value}>{user.email}</Text>
               </View>
 
               <View style={styles.infoItem}>
-                <MaterialIcons name="phone" size={24} color="#666" style={styles.icon} />
+                <MaterialIcons name="phone" size={24} color="#fff" style={styles.icon} />
                 <Text style={styles.label}>Phone Number</Text>
                 <Text style={styles.value}>{user.phoneNumber}</Text>
               </View>
@@ -160,7 +160,7 @@ const ProfileScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#1A3636',
   },
   scrollContainer: {
     padding: 20,
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     width: '100%',
-    backgroundColor: '#fff',
+    backgroundColor: '#677D6A',
     borderRadius: 10,
     padding: 20,
     shadowColor: '#000',
@@ -211,17 +211,17 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#777',
+    color: '#fff',
     flex: 1,
   },
   value: {
     fontSize: 18,
-    color: '#333',
+    color: '#fff',
     flex: 2,
   },
   backupMessage: {
     fontSize: 16,
-    color: '#666',
+    color: '#fff',
     textAlign: 'center',
     marginVertical: 20,
     paddingHorizontal: 10,
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 20,
     paddingVertical: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#1A3636',
     position: 'absolute',
     bottom: 0,
   },

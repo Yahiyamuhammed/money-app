@@ -37,6 +37,8 @@ const HistoryScreen = ({ navigation, db }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editname, setEditName] = useState('');
   const [loadingUpdate, setLoadingUpdate] = useState(false);
+  const [loading, setLoading] = useState(false);
+
 
 
 

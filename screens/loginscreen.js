@@ -75,6 +75,7 @@ const LoginScreen = ({ isVisible, onClose }) => {
             <TextInput
               style={styles.input}
               placeholder="Name"
+              placeholderTextColor="white"
               value={name}
               onChangeText={setName}
             />
@@ -83,6 +84,7 @@ const LoginScreen = ({ isVisible, onClose }) => {
               placeholder="Phone Number"
               value={phoneNumber}
               onChangeText={setPhoneNumber}
+              placeholderTextColor="white"
               keyboardType="phone-pad"
             />
           </>
@@ -90,6 +92,7 @@ const LoginScreen = ({ isVisible, onClose }) => {
         <TextInput
           style={styles.input}
           placeholder="Email"
+          placeholderTextColor="white"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -99,6 +102,7 @@ const LoginScreen = ({ isVisible, onClose }) => {
           <TextInput
             style={styles.passwordInput}
             placeholder="Password"
+            placeholderTextColor="white"
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
@@ -131,7 +135,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   container: {
-    backgroundColor: 'white',
+    backgroundColor: '#1A3636',
     padding: 20,
     borderRadius: 10,
     width: '80%',
@@ -141,9 +145,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
+    color:'#fff'
   },
   input: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#D6BD98',
     padding: 10,
     borderRadius: 5,
     marginBottom: 10,
@@ -151,7 +156,7 @@ const styles = StyleSheet.create({
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#D6BD98',
     borderRadius: 5,
     marginBottom: 10,
   },
@@ -163,7 +168,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   authButton: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#40534C',
     padding: 15,
     borderRadius: 5,
     alignItems: 'center',
@@ -185,7 +190,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   closeButtonText: {
-    color: '#555',
+    color: '#fff',
     fontSize: 16,
   },
   errorText: {
