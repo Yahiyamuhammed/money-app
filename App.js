@@ -65,6 +65,7 @@ const TabNavigator = ({ db }) => (
 export default function App() {
   const [db, setDb] = useState(null);
   const [error, setError] = useState(null);
+  const [user,setUser]=useState();
 
   useEffect(() => {
     const setupDatabase = async () => {
@@ -131,7 +132,7 @@ export default function App() {
           console.error('Error during periodic sync:', error);
         }
       
-    }, .5 * 60 * 1000); // Sync every 5 minutes when the app is active
+    }, 2 * 60 * 1000); // Sync every 5 minutes when the app is active
 
     return () => clearInterval(syncInterval);
   }, [db]);

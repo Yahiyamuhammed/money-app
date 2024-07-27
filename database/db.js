@@ -6,7 +6,7 @@ import * as Crypto from 'expo-crypto';
 import { auth ,db} from '../auth/firebase';
 import { db as firestoreDb } from '../auth/firebase'; // Ensure this import is correct
 import { createUserWithEmailAndPassword , signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc,getDoc,collection  ,getDocs, query, where, orderBy, limit,Timestamp ,serverTimestamp ,deleteDoc   } from 'firebase/firestore';
+import { doc, setDoc,getDoc,collection,updateDoc   ,getDocs, query, where, orderBy, limit,Timestamp ,serverTimestamp ,deleteDoc   } from 'firebase/firestore';
 
 const DB_NAME = 'mymoney.db';
 
@@ -741,3 +741,20 @@ export const autoSyncTransactions = async (sqliteDb) => {
 //     console.error("Error syncing deleted transactions:", error);
 //   }
 // };
+export const updateUserProfile = async (uid, data) => {
+  if (!uid) {
+    console.error("UID is undefined");
+    return;
+  }
+  
+  console.log("Updating profile for UID:", uid);
+  console.log("Data to update:", data);
+
+  try {
+    await updateDoc(doc(db, "users", uid), data);
+    console.log("Profile updated successfully");
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    throw error; // Rethrow the error so it can be caught by the calling function
+  }
+};
