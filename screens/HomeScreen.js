@@ -146,16 +146,16 @@ const AddTransactionForm = ({ db, onTransactionAdded, toggleForm }) => {
           style={[styles.typeButton, transactionType === 'borrowed' && styles.typeButtonActive]}
           onPress={() => setTransactionType('borrowed')}
         >
-          <Text style={styles.buttonText}>Borrow</Text>
+          <Text style={[styles.buttonText, transactionType !== 'borrowed' && styles.unselectedButtonText]}>Borrow</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.typeButton, transactionType === 'lent' && styles.typeButtonActive]}
           onPress={() => setTransactionType('lent')}
         >
-          <Text style={styles.buttonText}>Lend</Text>
+          <Text style={[styles.buttonText, transactionType !== 'lent' && styles.unselectedButtonText]}>Lend</Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity style={styles.submitButton} onPress={handleAddTransaction}>
+      <TouchableOpacity style={styles.submitButton} onPress={handleAddTransaction} disabled={loading}>
       {loading ? (
           <ActivityIndicator size="small" color="#FFF" />
         ) : (
@@ -314,6 +314,7 @@ const HomeScreen = ({ navigation, db }) => {
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <FlatList
+          style={    {backgroundColor: '#1A3636'      }    }
           ListHeaderComponent={renderHeader}
           data={transactions.slice(0, 5)}
           keyExtractor={(item) => item.id.toString()}
@@ -341,7 +342,7 @@ const styles = StyleSheet.create({
   container: {
     marginTop: 40,
     padding: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#1A3636',
     zIndex:2
   },
   listContainer: {
@@ -351,16 +352,18 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    color:'#ffffff'
+    
   },
   summaryContainer: {
     marginBottom: 20,
   },
   card: {
-    backgroundColor: 'white',
+    backgroundColor: '#677D6A',
     padding: 20,
     borderRadius: 10,
     marginBottom: 10,
-    shadowColor: '#000',
+    shadowColor: '#9DB2BF',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 1 },
     shadowRadius: 3,
@@ -376,28 +379,33 @@ const styles = StyleSheet.create({
   },
   summaryText: {
     fontSize: 16,
-    color: '#555',
+    color: '#fff',
   },
   amount: {
     fontSize: 22,
     fontWeight: 'bold',
     marginTop: 5,
+    color:'#fff'
   },
   netBalanceText: {
     fontSize: 16,
-    color: '#555',
+    color: '#fff',
     marginTop: 5,
   },
   recentTransactionsContainer: {
+    backgroundColor: '#1A3636',
+
     // marginBottom: 0,
   },
   sectionHeader: {
     fontSize: 18,
     fontWeight: 'bold',
+    color:'#fff'
     // marginBottom: 10,
+    
   },
   transactionItem: {
-    backgroundColor: 'white',
+    backgroundColor: '#677D6A',
     padding: 15,
     marginLeft:15,
     marginRight:15,
@@ -413,13 +421,15 @@ const styles = StyleSheet.create({
   },
   transactionText: {
     fontSize: 16,
+    color:'#fff'
   },
   transactionAmount: {
     fontSize: 16,
     fontWeight: 'bold',
+    color:'#fff'
   },
   addTransactionButton: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#40534C',
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
@@ -431,7 +441,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   addTransactionContainer: {
-    backgroundColor: 'white',
+    backgroundColor: '#677D6A',
     padding: 20,
     borderRadius: 10,
     shadowColor: '#000',
@@ -472,23 +482,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 10,
+    backgroundColor:'#677D6A'
   },
   typeButton: {
     flex: 1,
     padding: 10,
     borderRadius: 5,
     marginRight: 5,
-    backgroundColor: '#ddd',
+    backgroundColor: '#fff',
     alignItems: 'center',
   },
   typeButtonActive: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#D6BD98',
   },
   buttonText: {
     color: 'white',
   },
   submitButton: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#40534C',
     padding: 15,
     borderRadius: 5,
     alignItems: 'center',
@@ -498,13 +509,18 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
+    
   },
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
+    backgroundColor:'#1A3636',
   },
+  unselectedButtonText:{
+    color:'black'
+  }
 });
 
 export default HomeScreen;

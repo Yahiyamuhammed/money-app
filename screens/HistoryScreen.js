@@ -163,7 +163,7 @@ const HistoryScreen = ({ navigation, db }) => {
             <Text style={styles.transactionDate}>{new Date(item.date).toLocaleDateString()}</Text>
           </View>
           <Text style={styles.transactionAmount}>
-            {item.type === 'borrowed' ? '-' : '+'}${parseFloat(item.amount).toFixed(2)}   >
+            {item.type === 'borrowed' ? '-' : '+'}${parseFloat(item.amount).toFixed(2)}   
           </Text>
         </Animated.View>
         {selectedItemId === item.id && (
@@ -231,14 +231,14 @@ const HistoryScreen = ({ navigation, db }) => {
                 style={[styles.typeButton, editType === 'borrowed' && styles.typeButtonActive]}
                 onPress={() => setEditType('borrowed')}
               >
-                <Text style={styles.buttonText}>Borrow</Text>
+          <Text style={[styles.buttonText, editType !== 'borrowed' && styles.unselectedButtonText]}>Borrow</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.typeButton, editType === 'lent' && styles.typeButtonActive]}
                 onPress={() => setEditType('lent')}
               >
-                <Text style={styles.buttonText}>Lend</Text>
-              </TouchableOpacity>
+          <Text style={[styles.buttonText, editType !== 'lent' && styles.unselectedButtonText]}>Lend</Text>
+          </TouchableOpacity>
             </View>
             <TouchableOpacity style={styles.submitButton} onPress={handleUpdate}>
             {loadingUpdate ? (
@@ -261,6 +261,8 @@ const HistoryScreen = ({ navigation, db }) => {
         <TextInput
           style={styles.searchBar}
           placeholder="Search transactions..."
+          placeholderTextColor="white" // Set placeholder text color to white
+
           value={searchQuery}
           onChangeText={handleSearch}
         />
@@ -292,16 +294,17 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     paddingBottom: 0,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#1A3636',
   },
   header: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'left',
+    color:'#fff'
   },
   transactionItem: {
-    backgroundColor: 'white',
+    backgroundColor: '#677D6A',
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
@@ -328,16 +331,17 @@ const styles = StyleSheet.create({
   transactionText: {
     fontSize: 16,
     textAlign: 'left',
+    color:'#fff'
   },
   transactionDate: {
     fontSize: 14,
-    color: '#888',
+    color: '#fff',
     marginTop: 5,
   },
   transactionAmount: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#007bff',
+    color: '#fff',
   },
   blurred: {
     opacity: 0.5,
@@ -346,7 +350,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     padding: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: '#1A3636',
     borderRadius: 5,
     marginTop: -10,
     marginBottom: 10,
@@ -356,7 +360,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 5,
     marginLeft: 10,
-    backgroundColor: '#007bff',
+    backgroundColor: '#40534C',
     borderRadius: 5,
   },
   optionText: {
@@ -364,7 +368,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   editFormContainer: {
-    backgroundColor: 'white',
+    backgroundColor: '#677D6A',
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
@@ -378,6 +382,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
+    color:'#fff'
   },
   closeButton: {
     padding: 5,
@@ -408,13 +413,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   typeButtonActive: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#D6BD98',
   },
   buttonText: {
     fontWeight: 'bold',
+    color:'#fff'
   },
   submitButton: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#40534C',
     padding: 15,
     borderRadius: 5,
     alignItems: 'center',
@@ -427,7 +433,7 @@ const styles = StyleSheet.create({
   searchBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: '#40534C',
     borderRadius: 5,
     marginBottom: 10,
   },
@@ -435,10 +441,14 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 10,
     fontSize: 16,
+    color:'#fff'
   },
   clearButton: {
     padding: 10,
   },
+  unselectedButtonText:{
+    color:'black'
+  }
 });
 
 export default HistoryScreen;

@@ -45,9 +45,13 @@ const TabNavigator = ({ db }) => (
         }
         return <Icon name={iconName} size={size} color={color} />;
       },
-      tabBarActiveTintColor: 'tomato',
-      tabBarInactiveTintColor: 'gray',
+      tabBarActiveTintColor: 'black',
+      tabBarInactiveTintColor: '#677D6A',
       tabBarStyle: [{ display: 'flex' }, null],
+      tabBarStyle: { // Style the entire tab bar
+        backgroundColor: '#E2DFD0', // Set your desired background color here
+        // Additional styles for padding, border, etc. (optional)
+      },
     })}
   >
     <Tab.Screen name="Home" options={{ headerShown: false }}>
@@ -155,7 +159,7 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer >
       <TabNavigator db={db} />
     </NavigationContainer>
   );
