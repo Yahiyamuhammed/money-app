@@ -240,7 +240,7 @@ const HistoryScreen = ({ navigation, db }) => {
           <Text style={[styles.buttonText, editType !== 'lent' && styles.unselectedButtonText]}>Lend</Text>
           </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.submitButton} onPress={handleUpdate}>
+            <TouchableOpacity style={styles.submitButton} onPress={handleUpdate} disabled={loading}>
             {loadingUpdate ? (
                 <ActivityIndicator size="small" color="#fff"  />
               ) : (

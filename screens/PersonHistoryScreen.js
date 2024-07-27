@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, TextInput, Platform } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, TextInput, Platform ,ActivityIndicator} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getPersonTransactions, updateTransaction, deleteTransaction } from '../database/db';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -15,6 +15,8 @@ const PersonHistoryScreen = ({ route, db }) => {
   const [editType, setEditType] = useState('');
   const [editDate, setEditDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [loadingUpdate, setLoadingUpdate] = useState(false);
+
 
   // useEffect(() => {
   //   loadPersonTransactions();
@@ -102,6 +104,8 @@ const PersonHistoryScreen = ({ route, db }) => {
   };
 
   const handleUpdate = async () => {
+    setLoadingUpdate(true);
+
     const updatedTransaction = {
       ...editingTransaction,
       amount: parseFloat(editAmount),
@@ -112,12 +116,14 @@ const PersonHistoryScreen = ({ route, db }) => {
 
     await updateTransaction(db, updatedTransaction);
     setEditingTransaction(null);
+    setLoadingUpdate(false);
+
     setSelectedItemId(null);
     loadPersonTransactions();
   };
 
   const renderTransaction = ({ item }) => (
-    console.log("csz",item),
+    // console.log("csz",item),
     
     <TouchableOpacity 
       onPress={() => handlePress(item)}
@@ -200,17 +206,21 @@ const PersonHistoryScreen = ({ route, db }) => {
                 style={[styles.typeButton, editType === 'borrowed' && styles.typeButtonActive]}
                 onPress={() => setEditType('borrowed')}
               >
-                <Text style={styles.buttonText}>Borrow</Text>
-              </TouchableOpacity>
+          <Text style={[styles.buttonText, editType !== 'borrowed' && styles.unselectedButtonText]}>Borrow</Text>
+          </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.typeButton, editType === 'lent' && styles.typeButtonActive]}
                 onPress={() => setEditType('lent')}
               >
-                <Text style={styles.buttonText}>Lend</Text>
-              </TouchableOpacity>
+          <Text style={[styles.buttonText, editType !== 'lent' && styles.unselectedButtonText]}>Lend</Text>
+          </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.submitButton} onPress={handleUpdate}>
-              <Text style={styles.submitButtonText}>Update Transaction</Text>
+            <TouchableOpacity style={styles.submitButton} onPress={handleUpdate} disabled={loading}>
+            {loadingUpdate ? (
+                <ActivityIndicator size="small" color="#fff"  />
+              ) : (
+                <Text style={styles.submitButtonText}>Update Transaction</Text>
+              )}
             </TouchableOpacity>
           </View>
         )}
@@ -240,10 +250,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#1A3636',
   },
   headerContainer: {
-    backgroundColor: 'white',
+    backgroundColor: '#677D6A',
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
@@ -259,16 +269,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
     textAlign: 'left',
-    color: '#333',
+    color: '#fff',
   },
   statusHeader: {
     fontSize: 18,
     fontWeight: '600',
     textAlign: 'left',
-    color: '#555',
+    color: '#fff',
   },
   transactionItem: {
-    backgroundColor: 'white',
+    backgroundColor: '#677D6A',
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
@@ -285,6 +295,7 @@ const styles = StyleSheet.create({
   transactionDetails: {
     flexDirection: 'column',
     justifyContent: 'space-between',
+    
   },
   borrowed: {
     borderLeftColor: 'red',
@@ -298,22 +309,22 @@ const styles = StyleSheet.create({
   transactionText: {
     fontSize: 16,
     textAlign: 'left',
-    color: '#333',
+    color: '#fff',
   },
   transactionDate: {
     fontSize: 14,
-    color: '#888',
+    color: '#fff',
     marginTop: 5,
   },
   transactionType: {
     fontSize: 14,
-    color: '#888',
+    color: '#fff',
     marginTop: 5,
   },
   transactionAmount: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#007bff',
+    color: '#fff',
   },
   blurred: {
     opacity: 0.5,
@@ -322,7 +333,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     padding: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: '#1A3636',
     borderRadius: 5,
     marginTop: -10,
     marginBottom: 10,
@@ -332,7 +343,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 5,
     marginLeft: 10,
-    backgroundColor: '#007bff',
+    backgroundColor: '#40534C',
     borderRadius: 5,
   },
   optionText: {
@@ -340,7 +351,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   editFormContainer: {
-    backgroundColor: 'white',
+    backgroundColor: '#677D6A',
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
@@ -354,6 +365,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
+    color:'#fff'
   },
   closeButton: {
     padding: 5,
@@ -374,6 +386,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 10,
+    
   },
   typeButton: {
     flex: 1,
@@ -384,13 +397,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   typeButtonActive: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#D6BD98',
   },
   buttonText: {
     fontWeight: 'bold',
+    color:'#fff'
   },
   submitButton: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#40534C',
     padding: 15,
     borderRadius: 5,
     alignItems: 'center',
@@ -400,6 +414,9 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
+  unselectedButtonText:{
+    color:'black'
+  }
 });
 
 export default PersonHistoryScreen;
