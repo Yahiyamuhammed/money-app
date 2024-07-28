@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,ActivityIndicator } from 'react-native';
 import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { initDB, createUser, loginWithEmailAndPassword,loginUser ,storeLoginData,syncTransactions, mergeFirestoreTransactions  } from '../database/db'; // Adjust the import path as needed
+import { initDB, createUser,loginUser ,storeLoginData,syncTransactions  } from '../database/db'; // Adjust the import path as needed
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {  Snackbar } from 'react-native-paper';
 

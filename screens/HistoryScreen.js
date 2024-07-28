@@ -19,7 +19,6 @@ import {
   getPersonIdByName, 
   updateTransaction, 
   deleteTransaction ,
-  mergeFirestoreTransactions
 } from '../database/db';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {  Snackbar } from 'react-native-paper';

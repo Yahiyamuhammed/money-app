@@ -23,13 +23,10 @@ import {
   getOrCreateNameId,
   getPersonIdByName,
   dropTableUsers,
-  mergeFirestoreTransactions,
   syncTransactions
 } from '../database/db';
 import {  Snackbar } from 'react-native-paper';
 
-
-// import ProfileIcon from '../components/ProfileIcon'; // Import ProfileIcon
 
 
 const AddTransactionForm = ({ db, onTransactionAdded, toggleForm }) => {
@@ -213,33 +210,8 @@ const HomeScreen = ({ navigation, db }) => {
     loadData();
     
     
-    // const homemerge = async () => {
-    //       // const db = await initDB();
-    //       console.log("merging home");
-          
-    //       mergeFirestoreTransactions(db)
-
-    //     }
-    //     homemerge()
-
-    // const syncInterval = setInterval(async () => {
-      
-    //     // const db = await initDB();
-    //     await syncTransactions(db);
-      
-    // },.05 * 60 * 1000); // Sync every 5 minutes
-  
-    // return () => clearInterval(syncInterval);
   }, [db]);
-  // useEffect(() => {
-  //   const initAndDropTable = async () => {
-  //     // const db = await initDB();
-  //     await dropTableUsers(db); // Call dropTableUsers only after db is initialized
-  //     loadData();
-  //   };
   
-  //   initAndDropTable();
-  // }, [])
   const onRefresh = async () => {
     setRefreshing(true);
     await loadData();

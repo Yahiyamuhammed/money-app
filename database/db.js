@@ -29,20 +29,7 @@ export const initDB = async () => {
       isLoggedIn INTEGER DEFAULT 0
     );
      
-      CREATE TABLE IF NOT EXISTS names (
-        id TEXT PRIMARY KEY,
-        name TEXT UNIQUE
-      );
-
-      CREATE TABLE IF NOT EXISTS transactions (
-        id TEXT PRIMARY KEY,
-        amount REAL,
-        description TEXT,
-        type TEXT,
-        date TEXT,
-        name_id TEXT,
-        FOREIGN KEY (name_id) REFERENCES names (id)
-      );
+     
        CREATE TABLE IF NOT EXISTS offline_transactions (
         id TEXT PRIMARY KEY,
         amount REAL,
@@ -77,27 +64,6 @@ export const dropTableUsers = async (db) => {
   }
 };
 
-// export const getOrCreateNameId = async (db, name) => {
-//   try {
-//     let result = await db.getFirstAsync('SELECT id FROM names WHERE name = ?', [name]);
-//     if (result) {
-//       console.log("has id", result.id);
-//       return result.id;
-//     } else {
-//       console.log("entered random");
-//       const newId = generateRandomId();
-//       console.log("generated random", newId);
-//       await db.runAsync('INSERT INTO names (id, name) VALUES (?, ?)', [newId, name]);
-//       console.log("no id", newId);
-//       return newId;
-//     }
-//   } catch (error) {
-//     console.error("Error getting or creating name ID:", error);
-//     throw error;
-//   }
-// };
-
-
 
 
 export const getOrCreateNameId = async (db, name) => {
@@ -121,20 +87,7 @@ export const getOrCreateNameId = async (db, name) => {
     throw error;
   }
 };
-// export const getTransactions = async (db) => {
-//   try {
-//     const transactions = await db.getAllAsync(`
-//       SELECT t.*, n.name as description
-//       FROM transactions t
-//       JOIN names n ON t.name_id = n.id
-//       ORDER BY t.date DESC
-//     `);
-//     return transactions;
-//   } catch (error) {
-//     console.error("Error getting transactions:", error);
-//     throw error;
-//   }
-// };
+
 export const getTransactions = async (db) => {
   try {
     const transactions = await db.getAllAsync(`
@@ -148,26 +101,6 @@ export const getTransactions = async (db) => {
   }
 };
 
-// export const addTransaction = async (db, transaction) => {
-//   try {
-//     const transactionId = generateRandomId();
-//     await db.runAsync(
-//       'INSERT INTO transactions (id, amount, description, type, date, name_id) VALUES (?, ?, ?, ?, ?, ?)',
-//       [
-//         transactionId,
-//         parseFloat(transaction.amount),
-//         transaction.description,
-//         transaction.type,
-//         transaction.date,
-//         transaction.name_id
-//       ]
-//     );
-//     return transactionId;
-//   } catch (error) {
-//     console.error("Error adding transaction:", error);
-//     throw error;
-//   }
-// };
 export const addTransaction = async (db, transaction, isDownload = false) => {
   try {
     const transactionId = transaction.id || generateRandomId();
@@ -202,22 +135,6 @@ export const addTransaction = async (db, transaction, isDownload = false) => {
   }
 };
 
-// export const getPersonTransactions = async (db, nameId) => {
-//   try {
-//     const transactions = await db.getAllAsync(`
-//       SELECT t.*, n.name as description
-//       FROM transactions t
-//       JOIN names n ON t.name_id = n.id
-//       WHERE t.name_id = ?
-//       ORDER BY t.date DESC
-//     `, [nameId]);
-//     return transactions;
-//   } catch (error) {
-//     console.error('Error getting person transactions:', error);
-//     throw error;
-//   }
-// };
-
 export const getPersonTransactions = async (db, nameId) => {
   try {
     console.log("entered get person id",nameId);
@@ -234,16 +151,6 @@ export const getPersonTransactions = async (db, nameId) => {
     throw error;
   }
 };
-
-// export const getPersonIdByName = async (db, personName) => {
-//   try {
-//     const result = await db.getFirstAsync('SELECT id FROM names WHERE name = ?', [personName]);
-//     return result ? result.id : null;
-//   } catch (error) {
-//     console.error('Error getting person ID:', error);
-//     throw error;
-//   }
-// };
 
 export const getPersonIdByName = async (db, personName) => {
   try {
@@ -286,31 +193,6 @@ export const getTotals = async () => {
   }
 };
 
-// Add these functions to your db.js file
-
-// export const updateTransaction = async (db, transaction) => {
-//   try {
-//     await db.runAsync(
-//       'UPDATE transactions SET amount = ?, description = ?, type = ?, date = ? WHERE id = ?',
-//       [transaction.amount, transaction.description, transaction.type, transaction.date, transaction.id]
-//     );
-//   } catch (error) {
-//     console.error("Error updating transaction:", error);
-//     throw error;
-//   }
-// };
-
-// export const updateTransaction = async (db, transaction) => {
-//   try {
-//     await db.runAsync(
-//       'UPDATE offline_transactions SET amount = ?, description = ?, type = ?, date = ?, name_id = ?, name = ?, synced = 0 WHERE id = ?',
-//       [transaction.amount, transaction.description, transaction.type, transaction.date, transaction.name_id, transaction.name, transaction.id]
-//     );
-//   } catch (error) {
-//     console.error("Error updating transaction:", error);
-//     throw error;
-//   }
-// };
 export const updateTransaction = async (db, transaction, isDownload = false) => {
   try {
     const timestamp = transaction.timestamp || Date.now().toString();
@@ -332,14 +214,6 @@ export const updateTransaction = async (db, transaction, isDownload = false) => 
   }
 };
 
-// export const deleteTransaction = async (db, transactionId) => {
-//   try {
-//     await db.runAsync('DELETE FROM transactions WHERE id = ?', [transactionId]);
-//   } catch (error) {
-//     console.error("Error deleting transaction:", error);
-//     throw error;
-//   }
-// };
 export const deleteTransaction = async (db, transactionId) => {
   try {
     // Delete from SQLite
@@ -380,20 +254,7 @@ export const deleteTransaction = async (db, transactionId) => {
 };
 
 // firestore functions
-// Function to login with email and password
-export const loginWithEmailAndPassword = async (db, email, password) => {
-  try {
-    const user = await findUserByEmail(db, email);
-    if (user && await comparePassword(password, user.password)) {
-      return user;
-    } else {
-      return null; // Login failed
-    }
-  } catch (error) {
-    console.error('Error logging in:', error);
-    throw error;
-  }
-};
+
 export const createUser = async (email, password, name, phoneNumber) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -656,103 +517,8 @@ const downloadFirestoreChanges = async (sqliteDb, user) => {
 };
 
 
-export const afterLogin = async (db) => {
-  await syncTransactions(db);
-};
-export const mergeFirestoreTransactions = async (sqliteDb) => {
-  try {
-    const isUserLoggedIn = await AsyncStorage.getItem('isUserLoggedIn');
-    if (isUserLoggedIn !== 'true') {
-      console.log("User not logged in, can't fetch from Firestore");
-      return;
-    }
 
-    const user = auth.currentUser;
-    if (!user) {
-      console.log("Firebase user not found in mergeFirestoreTransactions, attempting to reauthenticate");
-      const email = await AsyncStorage.getItem('userEmail');
-      const password = await AsyncStorage.getItem('userPassword');
-      if (email && password) {
-        await signInWithEmailAndPassword(auth, email, password);
-      } else {
-        console.log("Unable to reauthenticate, no stored credentials");
-        return;
-      }
-    }
 
-    const userDocRef = doc(firestoreDb, 'users', user.uid);
-    const transactionsCollection = collection(userDocRef, 'transactions');
-    
-    const lastSyncTimestamp = await AsyncStorage.getItem('lastSyncTimestamp') || '0';
-    
-    const q = query(
-      transactionsCollection,
-      where('timestamp', '>', parseInt(lastSyncTimestamp)),
-      orderBy('timestamp', 'asc')
-    );
-    
-    const firestoreTransactions = await getDocs(q);
-    
-    for (const doc of firestoreTransactions.docs) {
-      const transaction = doc.data();
-      const existingTransaction = await sqliteDb.getFirstAsync('SELECT * FROM offline_transactions WHERE id = ?', [doc.id]);
-      
-      if (!existingTransaction) {
-        // New transaction, add it
-        await addTransaction(sqliteDb, {...transaction, id: doc.id, synced: 1});
-      } else if (transaction.timestamp > (existingTransaction.timestamp || 0)) {
-        // Existing transaction, update it if the Firestore version is newer
-        await updateTransaction(sqliteDb, {...transaction, id: doc.id, synced: 1});
-      }
-    }
-
-    // Update the last sync timestamp
-    const latestTimestamp = firestoreTransactions.docs.reduce(
-      (max, doc) => Math.max(max, doc.data().timestamp || 0),
-      parseInt(lastSyncTimestamp)
-    );
-    await AsyncStorage.setItem('lastSyncTimestamp', latestTimestamp.toString());
-
-    console.log("Firestore transactions merged successfully");
-  } catch (error) {
-    console.error("Error merging Firestore transactions:", error);
-    throw error;
-  }
-};
-export const autoSyncTransactions = async (sqliteDb) => {
-  try {
-    const lastAutoSyncTime = await AsyncStorage.getItem('lastAutoSyncTime') || '0';
-    const currentTime = Date.now();
-    const SYNC_INTERVAL = .01 * 60 * 1000; // 5 minutes in milliseconds
-    
-    if (currentTime - parseInt(lastAutoSyncTime) > SYNC_INTERVAL) {
-      await syncTransactions(sqliteDb);
-      await AsyncStorage.setItem('lastAutoSyncTime', currentTime.toString());
-      console.log("Auto-sync completed");
-    }
-  } catch (error) {
-    console.error("Error during auto-sync:", error);
-  }
-};
-
-// const syncDeletedTransactions = async (sqliteDb, user) => {
-//   try {
-//     const deletedTransactions = await sqliteDb.getAllAsync('SELECT * FROM deleted_transactions');
-    
-//     for (const transaction of deletedTransactions) {
-//       try {
-//         const transactionRef = doc(firestoreDb, 'users', user.uid, 'transactions', transaction.id);
-//         await deleteDoc(transactionRef);
-//         await sqliteDb.runAsync('DELETE FROM deleted_transactions WHERE id = ?', [transaction.id]);
-//         console.log(`Deleted transaction ${transaction.id} from Firestore`);
-//       } catch (error) {
-//         console.error(`Failed to delete transaction ${transaction.id} from Firestore:`, error);
-//       }
-//     }
-//   } catch (error) {
-//     console.error("Error syncing deleted transactions:", error);
-//   }
-// };
 export const updateUserProfile = async (uid, data) => {
   if (!uid) {
     console.error("UID is undefined");
