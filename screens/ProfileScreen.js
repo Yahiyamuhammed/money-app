@@ -8,6 +8,12 @@ import { MaterialIcons } from '@expo/vector-icons';
 import LoginScreen from './loginscreen';
 import { initDB, getLoginData ,signOutUser,updateUserProfile} from '../database/db'; // Adjust the import path as needed
 import EditProfileModal from './editProfileWindow'; 
+
+// import Snackbar from 'react-native-snackbar';
+import {  Snackbar } from 'react-native-paper';
+
+
+
 const defaultProfilePicture = require('../profile/dp.jpg');
 
 
@@ -15,6 +21,13 @@ const ProfileScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
   const [isLoginVisible, setIsLoginVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [visible, setVisible] = React.useState(false);
+
+  const onToggleSnackBar = () => setVisible(!visible);
+
+  const onDismissSnackBar = () => setVisible(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+
 
 
   useEffect(() => {
@@ -37,9 +50,19 @@ const ProfileScreen = ({ navigation }) => {
 
   const handleUpdateProfile = async (updatedData) => {
     try {
+      console.log("user id =",user.id)
       await updateUserProfile(user.id, updatedData);
+      updatedData.id = user.id;
+      console.log(updatedData,"usei id:",user.id);
+      
       setUser(updatedData);
-      Alert.alert("Success", "Profile updated successfully!");
+      console.log(user);
+      
+      // Alert.alert("Success", "Profile updated successfully!");
+      // setSnackbarMessage("Profile updated successfully!");
+      handleSnackbarMessage("Profile updated successfully!")
+
+      
     } catch (error) {
       console.error('Error updating profile:', error);
       Alert.alert("Error", "Failed to update profile. Please try again.");
@@ -61,6 +84,11 @@ const ProfileScreen = ({ navigation }) => {
     ]);
     // Show the login screen after sign-out if needed
     // setIsLoginVisible(true);
+  };
+  const handleSnackbarMessage = (message) => {
+    setVisible(true);
+
+    setSnackbarMessage(message);
   };
 
   const handleLoginClose = async () => {
@@ -144,7 +172,7 @@ const ProfileScreen = ({ navigation }) => {
         )}
       </View>
 
-      {isLoginVisible && <LoginScreen isVisible={isLoginVisible} onClose={handleLoginClose} />}
+      {isLoginVisible && <LoginScreen isVisible={isLoginVisible} onClose={handleLoginClose} onMessage={handleSnackbarMessage}/>}
       {isEditModalVisible && (
         <EditProfileModal
           isVisible={isEditModalVisible}
@@ -153,6 +181,14 @@ const ProfileScreen = ({ navigation }) => {
           userData={user}
         />
       )}
+        <Snackbar
+          visible={visible}
+          onDismiss={onDismissSnackBar}
+          duration={Snackbar.DURATION_SHORT}
+          style={{ backgroundColor: '#D6BD98' }} // Optional: Custom styles
+        >
+          {snackbarMessage}
+        </Snackbar>
     </View>
   );
 };

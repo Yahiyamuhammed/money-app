@@ -1,14 +1,17 @@
 // LoginScreen.js
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,ActivityIndicator } from 'react-native';
 import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { initDB, createUser, loginWithEmailAndPassword,loginUser ,storeLoginData,syncTransactions, mergeFirestoreTransactions  } from '../database/db'; // Adjust the import path as needed
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {  Snackbar } from 'react-native-paper';
 
 
-const LoginScreen = ({ isVisible, onClose }) => {
+
+
+const LoginScreen = ({ isVisible, onClose ,onMessage }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -16,12 +19,19 @@ const LoginScreen = ({ isVisible, onClose }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+
+
+
   
   const handleAuth = async () => {
     try {
       setError('');
       const db = await initDB();
   
+      setLoading(true);
+
       if (isLogin) {
         const user = await loginUser(email, password);
         if (user) {
@@ -33,8 +43,11 @@ const LoginScreen = ({ isVisible, onClose }) => {
           await AsyncStorage.setItem('authToken', user.uid); // Using UID as a simple token
   
           await syncTransactions(db);
+          setLoading(false);
+
   
-          Alert.alert('Login successful');
+          // Alert.alert('Login successful');
+          onMessage("login successfull")
           onClose();
         } else {
           setError('Invalid email or password');
@@ -52,12 +65,17 @@ const LoginScreen = ({ isVisible, onClose }) => {
         await AsyncStorage.setItem('authToken', user.uid);
   
         await syncTransactions(db);
+        setLoading(false);
+
   
-        Alert.alert('User registered successfully');
+        // Alert.alert('User registered successfully');
+        onMessage("lUser registered successfully")
         onClose();
       }
     } catch (error) {
       console.error('Authentication error:', error);
+      setLoading(false);
+
       setError(error.message);
     }
   };
@@ -112,8 +130,12 @@ const LoginScreen = ({ isVisible, onClose }) => {
           </TouchableOpacity>
         </View>
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
-        <TouchableOpacity style={styles.authButton} onPress={handleAuth}>
+        <TouchableOpacity style={styles.authButton} onPress={handleAuth} disabled={loading}>
+        {loading ? (
+          <ActivityIndicator size="small" color="#FFF" />
+        ) : (
           <Text style={styles.authButtonText}>{isLogin ? 'Login' : 'Sign Up'}</Text>
+        )}
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
           <Text style={styles.switchText}>
@@ -121,8 +143,10 @@ const LoginScreen = ({ isVisible, onClose }) => {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+          
           <Text style={styles.closeButtonText}>Close</Text>
         </TouchableOpacity>
+        
       </View>
     </Modal>
   );

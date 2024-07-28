@@ -26,6 +26,8 @@ import {
   mergeFirestoreTransactions,
   syncTransactions
 } from '../database/db';
+import {  Snackbar } from 'react-native-paper';
+
 
 // import ProfileIcon from '../components/ProfileIcon'; // Import ProfileIcon
 
@@ -181,6 +183,11 @@ const HomeScreen = ({ navigation, db }) => {
   const [showForm, setShowForm] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [description, setDescription] = useState('');
+  const [visible, setVisible] = React.useState(false);
+  const onDismissSnackBar = () => setVisible(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+
+
 
 
   const loadData = async () => {
@@ -246,6 +253,9 @@ const HomeScreen = ({ navigation, db }) => {
   };
 
   const handleTransactionAdded = async () => {
+    setVisible(true);
+
+    setSnackbarMessage("transaction added");
     await loadData();
   };
 
@@ -334,6 +344,14 @@ const HomeScreen = ({ navigation, db }) => {
           contentContainerStyle={styles.listContainer}
         />
       </TouchableWithoutFeedback>
+      <Snackbar
+          visible={visible}
+          onDismiss={onDismissSnackBar}
+          duration={Snackbar.DURATION_SHORT}
+          style={{ backgroundColor: '#D6BD98' }} // Optional: Custom styles
+        >
+          {snackbarMessage}
+        </Snackbar>
     </KeyboardAvoidingView>
   );
 };

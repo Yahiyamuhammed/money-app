@@ -22,6 +22,8 @@ import {
   mergeFirestoreTransactions
 } from '../database/db';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import {  Snackbar } from 'react-native-paper';
+
 // import { getTransactions, getPersonIdByName } from '../database/db';
 
 const HistoryScreen = ({ navigation, db }) => {
@@ -38,6 +40,11 @@ const HistoryScreen = ({ navigation, db }) => {
   const [editname, setEditName] = useState('');
   const [loadingUpdate, setLoadingUpdate] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [visible, setVisible] = React.useState(false);
+  const onDismissSnackBar = () => setVisible(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+
+
 
 
 
@@ -113,6 +120,8 @@ const HistoryScreen = ({ navigation, db }) => {
           text: "Delete", 
           onPress: async () => {
             await deleteTransaction(db, transactionId);
+            handleSnackbarMessage("Transaction deleted")
+
             setSelectedItemId(null);
             loadTransactions();
           }
@@ -133,6 +142,7 @@ const HistoryScreen = ({ navigation, db }) => {
     };
 
     await updateTransaction(db, updatedTransaction);
+    handleSnackbarMessage("Transaction updated")
     setLoadingUpdate(false);
 
     setEditingTransaction(null);
@@ -146,6 +156,11 @@ const HistoryScreen = ({ navigation, db }) => {
     };
     const clearSearch = () => {
       setSearchQuery('');
+    };
+    const handleSnackbarMessage = (message) => {
+      setVisible(true);
+  
+      setSnackbarMessage(message);
     };
 
   const renderTransaction = ({ item }) => (
@@ -285,6 +300,14 @@ const HistoryScreen = ({ navigation, db }) => {
           />
         }
       />
+      <Snackbar
+          visible={visible}
+          onDismiss={onDismissSnackBar}
+          duration={Snackbar.DURATION_SHORT}
+          style={{ backgroundColor: '#D6BD98' }} // Optional: Custom styles
+        >
+          {snackbarMessage}
+        </Snackbar>
     </View>
   );
 };

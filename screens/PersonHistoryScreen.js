@@ -3,6 +3,8 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, TextInput, P
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getPersonTransactions, updateTransaction, deleteTransaction } from '../database/db';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import {  Snackbar } from 'react-native-paper';
+
 
 const PersonHistoryScreen = ({ route, db }) => {
   const { nameId, personName } = route.params;
@@ -17,6 +19,10 @@ const PersonHistoryScreen = ({ route, db }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [loadingUpdate, setLoadingUpdate] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const [visible, setVisible] = React.useState(false);
+  const onDismissSnackBar = () => setVisible(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
 
 
@@ -99,6 +105,8 @@ const PersonHistoryScreen = ({ route, db }) => {
             await deleteTransaction(db, transactionId);
             setSelectedItemId(null);
             loadPersonTransactions();
+            handleSnackbarMessage("Transaction daleted")
+
           }
         }
       ]
@@ -117,11 +125,19 @@ const PersonHistoryScreen = ({ route, db }) => {
     };
 
     await updateTransaction(db, updatedTransaction);
+
     setEditingTransaction(null);
     setLoadingUpdate(false);
+    handleSnackbarMessage("transaction updated")
+
 
     setSelectedItemId(null);
     loadPersonTransactions();
+  };
+  const handleSnackbarMessage = (message) => {
+    setVisible(true);
+
+    setSnackbarMessage(message);
   };
 
   const renderTransaction = ({ item }) => (
@@ -241,6 +257,14 @@ const PersonHistoryScreen = ({ route, db }) => {
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderTransaction}
       />
+      <Snackbar
+          visible={visible}
+          onDismiss={onDismissSnackBar}
+          duration={Snackbar.DURATION_SHORT}
+          style={{ backgroundColor: '#D6BD98' }} // Optional: Custom styles
+        >
+          {snackbarMessage}
+        </Snackbar>
     </View>
   );
 };

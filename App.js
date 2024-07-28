@@ -6,6 +6,8 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { ActivityIndicator, View, Text } from 'react-native';
 import { initDB,signOutUser ,syncTransactions} from './database/db';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from "@react-native-community/netinfo";
+
 
 
 import { auth } from './auth/firebase';
@@ -105,8 +107,21 @@ export default function App() {
           await reauthenticate();
         }
 
+         // Set up network state listener
+         const unsubscribeNetInfo = NetInfo.addEventListener(state => {
+          if (state.isConnected) {
+            console.log('Internet connection available, syncing...');
+            syncTransactions(database);
+          } else {
+            console.log('Internet connection lost');
+          }
+        });
+
         // Cleanup subscription on unmount
-        return () => unsubscribe();
+       return () => {
+          unsubscribe();
+          unsubscribeNetInfo();
+        };
 
       } catch (error) {
         console.error('Failed to initialize database:', error);
@@ -140,12 +155,17 @@ export default function App() {
     const syncInterval = setInterval(async () => {
       
         try {
-          await syncTransactions(db);
+          const netInfo = await NetInfo.fetch();
+          if (netInfo.isConnected) {
+            await syncTransactions(db);
+          } else {
+            console.log('Periodic sync skipped: No internet connection');
+          }
         } catch (error) {
           console.error('Error during periodic sync:', error);
         }
       
-    }, 2 * 60 * 1000); // Sync every 5 minutes when the app is active
+    }, .2 * 60 * 1000); // Sync every 5 minutes when the app is active
 
     return () => clearInterval(syncInterval);
   }, [db]);

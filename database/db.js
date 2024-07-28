@@ -7,6 +7,7 @@ import { auth ,db} from '../auth/firebase';
 import { db as firestoreDb } from '../auth/firebase'; // Ensure this import is correct
 import { createUserWithEmailAndPassword , signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc,getDoc,collection,updateDoc   ,getDocs, query, where, orderBy, limit,Timestamp ,serverTimestamp ,deleteDoc   } from 'firebase/firestore';
+import NetInfo from "@react-native-community/netinfo";
 
 const DB_NAME = 'mymoney.db';
 
@@ -347,8 +348,11 @@ export const deleteTransaction = async (db, transactionId) => {
 
     const isUserLoggedIn = await AsyncStorage.getItem('isUserLoggedIn');
     const user = auth.currentUser;
+
+     // Check internet connection
+     const netInfo = await NetInfo.fetch();
     
-    if (isUserLoggedIn === 'true' && user) {
+    if (isUserLoggedIn === 'true' && user && netInfo.isConnected) {
       try {
         // Mark as deleted in Firestore
         const transactionRef = doc(firestoreDb, 'users', user.uid, 'transactions', transactionId);
@@ -493,6 +497,14 @@ export const signOutUser = async () => {
 
 export const syncTransactions = async (sqliteDb) => {
   try {
+
+    const netInfo = await NetInfo.fetch();
+    if (!netInfo.isConnected) {
+      console.log("No internet connection, skipping sync");
+      return;
+    }
+
+
     const isUserLoggedIn = await AsyncStorage.getItem('isUserLoggedIn');
     if (isUserLoggedIn !== 'true') {
       console.log("User not logged in, can't sync");
