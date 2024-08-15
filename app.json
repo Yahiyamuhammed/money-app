@@ -2,18 +2,18 @@
   "expo": {
     "name": "NexMoney",
     "slug": "MyMoneyApk",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon1.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/splash1.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "2.0.0"
+      "buildNumber": "2.0.1"
     },
     "android": {
       "adaptiveIcon": {

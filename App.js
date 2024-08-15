@@ -165,7 +165,7 @@ export default function App() {
           console.error('Error during periodic sync:', error);
         }
       
-    }, .2 * 60 * 1000); // Sync every 5 minutes when the app is active
+    }, 2 * 60 * 1000); // Sync every 5 minutes when the app is active
 
     return () => clearInterval(syncInterval);
   }, [db]);

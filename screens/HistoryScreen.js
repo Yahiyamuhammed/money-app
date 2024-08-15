@@ -179,7 +179,7 @@ const HistoryScreen = ({ navigation, db }) => {
             <Text style={styles.transactionDate}>{new Date(item.date).toLocaleDateString()}</Text>
           </View>
           <Text style={styles.transactionAmount}>
-            {item.type === 'borrowed' ? '-' : '+'}${parseFloat(item.amount).toFixed(2)}   
+            {item.type === 'borrowed' ? '-' : '+'}₹{parseFloat(item.amount).toFixed(2)}   
           </Text>
         </Animated.View>
         {selectedItemId === item.id && (

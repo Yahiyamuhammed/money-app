@@ -51,9 +51,9 @@ const PersonHistoryScreen = ({ route, db }) => {
 
   const getStatusHeader = () => {
     if (total > 0) {
-      return `${personName} needs to pay you $${Math.abs(total).toFixed(2)}`;
+      return `${personName} needs to pay you ₹${Math.abs(total).toFixed(2)}`;
     } else if (total < 0) {
-      return `You need to pay ${personName} $${Math.abs(total).toFixed(2)}`;
+      return `You need to pay ${personName} ₹${Math.abs(total).toFixed(2)}`;
     } else {
       return `You're settled up with ${personName}`;
     }
@@ -166,7 +166,7 @@ const PersonHistoryScreen = ({ route, db }) => {
             </Text>
           </View>
           <Text style={styles.transactionAmount}>
-            {item.type === 'borrowed' ? '-' : '+'}${parseFloat(item.amount).toFixed(2)}
+            {item.type === 'borrowed' ? '-' : '+'}₹{parseFloat(item.amount).toFixed(2)}
           </Text>
         </View>
         {selectedItemId === item.id && (

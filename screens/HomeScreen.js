@@ -33,7 +33,7 @@ const AddTransactionForm = ({ db, onTransactionAdded, toggleForm }) => {
   const [amount, setAmount] = useState('');
   const [name, setName] = useState('');
 
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState('none');
   const [transactionType, setTransactionType] = useState('borrowed');
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -67,7 +67,7 @@ const AddTransactionForm = ({ db, onTransactionAdded, toggleForm }) => {
       await addTransaction(db, newTransaction);
       onTransactionAdded();
       setAmount('');
-      setDescription('');
+      // setDescription('');
       setDate(new Date());
       setName('');
       setLoading(false);
@@ -129,7 +129,7 @@ const AddTransactionForm = ({ db, onTransactionAdded, toggleForm }) => {
           onChange={onDateChange}
         />
       )}
-      <TextInput
+      {/* <TextInput
           ref={descriptionRef}
           style={styles.input}
           placeholder="Description"
@@ -138,7 +138,7 @@ const AddTransactionForm = ({ db, onTransactionAdded, toggleForm }) => {
           returnKeyType="next"
           onSubmitEditing={() => amountInputRef.current.focus()}
           blurOnSubmit={false}
-      />
+      /> */}
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity
@@ -254,17 +254,17 @@ const HomeScreen = ({ navigation, db }) => {
       
         <View style={styles.card}>
           <Text style={styles.summaryText}>Total Borrowed</Text>
-          <Text style={styles.amount}>${totalBorrowed.toFixed(2)}</Text>
+          <Text style={styles.amount}>₹{totalBorrowed.toFixed(2)}</Text>
         </View>
         <View style={styles.card}>
           <Text style={styles.summaryText}>Total Lent</Text>
-          <Text style={styles.amount}>${totalLent.toFixed(2)}</Text>
+          <Text style={styles.amount}>₹{totalLent.toFixed(2)}</Text>
         </View>
         <View style={[styles.card, netBalance >= 0 ? styles.cardPositive : styles.cardNegative]}>
           <Text style={styles.summaryText}>Net Balance</Text>
-          <Text style={styles.amount}>${netBalance.toFixed(2)}</Text>
+          <Text style={styles.amount}>₹{netBalance.toFixed(2)}</Text>
           <Text style={styles.netBalanceText}>
-            {netBalance >= 0 ? 'You are owed' : 'You owe'} ${Math.abs(netBalance).toFixed(2)}
+            {netBalance >= 0 ? 'You are owed' : 'You owe'} ₹{Math.abs(netBalance).toFixed(2)}
           </Text>
         </View>
       </View>
@@ -305,7 +305,7 @@ const HomeScreen = ({ navigation, db }) => {
               <View style={styles.transactionItem}>
                 <Text style={styles.transactionText}>{item.name}</Text>
                 <Text style={styles.transactionAmount}>
-                  {item.type === 'borrowed' ? '-' : '+'}${parseFloat(item.amount).toFixed(2)}
+                  {item.type === 'borrowed' ? '-' : '+'}₹{parseFloat(item.amount).toFixed(2)}
                 </Text>
               </View>
             </TouchableOpacity>

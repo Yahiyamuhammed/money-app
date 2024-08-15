@@ -42,13 +42,14 @@ const LoginScreen = ({ isVisible, onClose ,onMessage }) => {
           // Instead of storing the password, store a hashed version or a token
           await AsyncStorage.setItem('authToken', user.uid); // Using UID as a simple token
   
+          onMessage("login successfull")
+          onClose();
           await syncTransactions(db);
           setLoading(false);
 
   
           // Alert.alert('Login successful');
-          onMessage("login successfull")
-          onClose();
+         
         } else {
           setError('Invalid email or password');
         }
@@ -64,19 +65,56 @@ const LoginScreen = ({ isVisible, onClose ,onMessage }) => {
         await AsyncStorage.setItem('userEmail', email);
         await AsyncStorage.setItem('authToken', user.uid);
   
+        onMessage("lUser registered successfully")
+        onClose();
         await syncTransactions(db);
         setLoading(false);
 
   
         // Alert.alert('User registered successfully');
-        onMessage("lUser registered successfully")
-        onClose();
+       
       }
     } catch (error) {
       console.error('Authentication error:', error);
       setLoading(false);
 
-      setError(error.message);
+        // Map Firebase error codes to custom messages
+        let errorMessage = 'An error occurred. Please try again.';
+        switch (error.code) {
+          case 'auth/email-already-in-use':
+            errorMessage = 'This email address is already in use.';
+            break;
+          case 'auth/invalid-email':
+            errorMessage = 'This email address is not valid.';
+            break;
+          case 'auth/operation-not-allowed':
+            errorMessage = 'Operation not allowed. Please contact support.';
+            break;
+          case 'auth/weak-password':
+            errorMessage = 'The password is too weak. Please use a stronger password.';
+            break;
+          case 'auth/user-disabled':
+            errorMessage = 'This user account has been disabled.';
+            break;
+          case 'auth/user-not-found':
+            errorMessage = 'No user found with this email.';
+            break;
+          case 'auth/wrong-password':
+            errorMessage = 'Incorrect password. Please try again.';
+            break;
+          default:
+            errorMessage = 'An error occurred. Please try again.';
+            break;
+        }
+
+        if (error.message.includes('UNIQUE constraint failed: offline_transactions.id')) {
+          console.log("calling login again");
+          
+          // Call handleAuth again or handle the error as needed
+          handleAuth();  // This will retry the authentication process
+        } else {
+          setError(errorMessage);
+        }
     }
   };
 
