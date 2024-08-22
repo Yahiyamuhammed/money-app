@@ -95,21 +95,35 @@ const AddTransactionForm = ({ db, onTransactionAdded, toggleForm }) => {
         </TouchableOpacity>
       </View>
       <TextInput
-        ref={nameInputRef}
-        style={styles.input}
-        placeholder="Name"
-        value={name}
-        onChangeText={setName}
-        returnKeyType="next"
-        onSubmitEditing={() => amountInputRef.current.focus()}
-        blurOnSubmit={false}
+          ref={nameInputRef}
+          style={styles.input}
+          placeholder="Name"
+          value={name}
+          onChangeText={setName}
+          returnKeyType="next"
+          onBlur={() => {
+            // Trim trailing spaces when input loses focus
+            setName((prevName) => prevName.trimEnd());
+          }}
+          onSubmitEditing={() => amountInputRef.current.focus()}
+          blurOnSubmit={false}
       />
       <TextInput
         ref={amountInputRef}
         style={styles.input}
         placeholder="Amount"
         value={amount}
-        onChangeText={setAmount}
+        onChangeText={(text) => {
+          // Remove leading zeros
+          const cleanedText = text.replace(/^0+(?!\.|$)/, '');
+      
+          // Prevent submitting when the amount is just zero
+          if (cleanedText === '0' || cleanedText === '') {
+            setAmount('');
+          } else {
+            setAmount(cleanedText);
+          }
+        }}
         keyboardType="numeric"
         returnKeyType="done"
       />

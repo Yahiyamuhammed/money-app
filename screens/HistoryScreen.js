@@ -208,12 +208,27 @@ const HistoryScreen = ({ navigation, db }) => {
               placeholder="Name"
               value={editname}
               onChangeText={setEditName}
+              onBlur={() => {
+                // Trim trailing spaces when input loses focus
+                setEditName((prevName) => prevName.trimEnd());
+              }}
             />
             <TextInput
               style={styles.input}
               placeholder="Amount"
               value={editAmount}
-              onChangeText={setEditAmount}
+             
+              onChangeText={(text) => {
+                // Remove leading zeros
+                const cleanedText = text.replace(/^0+(?!\.|$)/, '');
+            
+                // Prevent submitting when the amount is just zero
+                if (cleanedText === '0' || cleanedText === '') {
+                  setEditAmount('');
+                } else {
+                  setEditAmount(cleanedText);
+                }
+              }}
               keyboardType="numeric"
             />
             <TouchableOpacity onPress={() => setShowDatePicker(true)}>
@@ -232,7 +247,7 @@ const HistoryScreen = ({ navigation, db }) => {
                 }}
               />
             )}
-            <TextInput
+            {/* <TextInput
                 // ref={descriptionRef}
                 style={styles.input}
                 placeholder="Description"
@@ -241,7 +256,7 @@ const HistoryScreen = ({ navigation, db }) => {
                 returnKeyType="next"
                 onSubmitEditing={() => amountInputRef.current.focus()}
                 blurOnSubmit={false}
-            />
+            /> */}
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={[styles.typeButton, editType === 'borrowed' && styles.typeButtonActive]}

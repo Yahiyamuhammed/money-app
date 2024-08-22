@@ -11,6 +11,8 @@ const PersonHistoryScreen = ({ route, db }) => {
   const [transactions, setTransactions] = useState([]);
   const [total, setTotal] = useState(0);
   const [selectedItemId, setSelectedItemId] = useState(null);
+  const [editname, setEditName] = useState('');
+
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [editAmount, setEditAmount] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -86,6 +88,7 @@ const PersonHistoryScreen = ({ route, db }) => {
   };
 
   const handleEdit = (transaction) => {
+    setEditName(transaction.name);
     setEditingTransaction(transaction);
     setEditAmount(transaction.amount.toString());
     setEditDescription(transaction.description);
@@ -118,6 +121,7 @@ const PersonHistoryScreen = ({ route, db }) => {
 
     const updatedTransaction = {
       ...editingTransaction,
+      name:editname,
       amount: parseFloat(editAmount),
       description: editDescription,
       type: editType,
@@ -192,15 +196,29 @@ const PersonHistoryScreen = ({ route, db }) => {
             </View>
             <TextInput
               style={styles.input}
-              placeholder="Description"
-              value={editDescription}
-              onChangeText={setEditDescription}
+              placeholder="Name"
+              value={editname}
+              onChangeText={setEditName}
+              onBlur={() => {
+                // Trim trailing spaces when input loses focus
+                setEditName((prevName) => prevName.trimEnd());
+              }}
             />
             <TextInput
               style={styles.input}
               placeholder="Amount"
               value={editAmount}
-              onChangeText={setEditAmount}
+              onChangeText={(text) => {
+                // Remove leading zeros
+                const cleanedText = text.replace(/^0+(?!\.|$)/, '');
+            
+                // Prevent submitting when the amount is just zero
+                if (cleanedText === '0' || cleanedText === '') {
+                  setEditAmount('');
+                } else {
+                  setEditAmount(cleanedText);
+                }
+              }}
               keyboardType="numeric"
             />
             <TouchableOpacity onPress={() => setShowDatePicker(true)}>
@@ -219,6 +237,12 @@ const PersonHistoryScreen = ({ route, db }) => {
                 }}
               />
             )}
+            {/* <TextInput
+              style={styles.input}
+              placeholder="Description"
+              value={editDescription}
+              onChangeText={setEditDescription}
+            /> */}
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={[styles.typeButton, editType === 'borrowed' && styles.typeButtonActive]}
